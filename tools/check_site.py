@@ -18,8 +18,11 @@ try:
         page.on('pageerror',lambda e:errors.append(str(e)))
         page.on('request',lambda r:apis.append(r.url) if '/api/' in r.url else None)
         page.goto(BASE);page.wait_for_load_state('networkidle')
-        expect(page.locator('.real-game-board')).to_be_visible()
+        expect(page.locator('#launch-web')).to_be_visible()
+        expect(page.locator('#launch-godot')).to_be_visible()
         assert page.locator('html').get_attribute('data-hosting')=='static'
+        page.locator('#launch-web').click()
+        expect(page.locator('.real-game-board')).to_be_visible()
         page.goto(BASE+'#rooms')
         expect(page.locator('.network-launch-note')).to_be_visible()
         expect(page.locator('[data-room="create"]')).to_be_disabled()
@@ -36,6 +39,6 @@ try:
         page.wait_for_function('document.querySelectorAll("math mfrac").length>10')
         assert not errors,errors
         browser.close()
-    print('PASS: static GitHub Pages edition, repository subpath, closed/open cards, local game, MathML, honest room launch and no backend requests.')
+    print('PASS: version chooser, static GitHub Pages edition, repository subpath, legacy links, closed/open cards, local game, MathML, honest room launch and no backend requests.')
 finally:
     server.terminate();server.wait(timeout=5)

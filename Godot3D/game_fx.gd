@@ -1,4 +1,5 @@
 extends Node3D
+const GameFont=preload("res://game_font.tres")
 ## Cosmetic feedback. No function in this layer writes scores, cards or turns.
 
 var enabled: bool = true
@@ -36,6 +37,8 @@ func setup(view: Camera3D, character: Sprite3D, canvas: CanvasLayer) -> void:
 		var sphere:=SphereMesh.new()
 		sphere.radius=rng.randf_range(0.012,0.035)
 		sphere.height=sphere.radius*2
+		sphere.radial_segments=8
+		sphere.rings=4
 		mote.mesh=sphere
 		mote.material_override=glow_material(Color("ffda9c") if i%3==0 else Color("adbbff"))
 		mote.position=Vector3(rng.randf_range(-6.0,5.8),rng.randf_range(0.5,3.1),rng.randf_range(-4.5,4.3))
@@ -137,6 +140,8 @@ func burst(location: Vector3, color: Color, amount: int = 14, power: float = 1.0
 		var shape:=SphereMesh.new()
 		shape.radius=rng.randf_range(0.025,0.065)
 		shape.height=shape.radius*2
+		shape.radial_segments=8
+		shape.rings=4
 		spark.mesh=shape
 		spark.material_override=glow_material(color.lightened(rng.randf_range(0,.25)))
 		spark.position=location
@@ -160,6 +165,7 @@ func ripple(location: Vector3, color: Color, power: float = 1.0) -> void:
 func floating_text(text: String, location: Vector3, color: Color) -> void:
 	if not enabled:return
 	var label:=Label3D.new()
+	label.font=GameFont
 	label.text=text
 	label.billboard=BaseMaterial3D.BILLBOARD_ENABLED
 	label.font_size=54
@@ -199,6 +205,7 @@ func toast(text: String, color: Color = Color("ffe19c")) -> void:
 	label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size",32)
+	label.add_theme_font_override("font",GameFont)
 	label.add_theme_color_override("font_color",color)
 	label.add_theme_color_override("font_shadow_color",Color("211633"))
 	label.add_theme_constant_override("shadow_offset_y",4)

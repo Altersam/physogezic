@@ -4,6 +4,7 @@ const GOAL: int = 15
 const COLORS: Array[Color] = [Color("bda2ef"),Color("ffc586"),Color("87d7c8"),Color("ef9db9")]
 const Feedback=preload("res://game_fx.gd")
 const Journal=preload("res://journal.gd")
+const GameFont=preload("res://game_font.tres")
 const TOPICS: Dictionary={"mechanics":"Механика","heat":"Тепловые явления","electricity":"Электричество","optics":"Оптика","quantum":"Квантовые явления"}
 var questions: Array = []
 var deck: Array = []
@@ -44,6 +45,8 @@ var victory_panel: Control
 var turn_halo: Sprite3D
 var sound_button: Button
 var effect_button: Button
+var web_state_pending: bool=false
+var game_theme: Theme
 
 func _ready() -> void:
 	smoke = OS.get_cmdline_user_args().has("--smoke")
@@ -55,12 +58,15 @@ func _ready() -> void:
 		get_tree().quit(1)
 		return
 	journal=Journal.new()
+	game_theme=Theme.new()
+	game_theme.default_font=GameFont
 	fx=Feedback.new()
 	add_child(fx)
 	_build_world()
 	_build_ui()
 	fx.setup(camera,mascot,hud)
 	if smoke:fx.set_enabled(false);fx.sound_enabled=false
+	elif OS.get_cmdline_user_args().has("--reduced-motion"):fx.set_enabled(false)
 	turn_halo=fx.halo(Color("ffe1a2"),.8)
 	add_child(turn_halo)
 	_new_game(2)
@@ -159,6 +165,7 @@ func _build_world() -> void:
 		light_pad.position=_cell(i)+Vector3(0,-.055,0)
 		add_child(light_pad)
 		var label := Label3D.new()
+		label.font=GameFont
 		label.text = "СТАРТ" if i==0 else "★" if i==GOAL else str(i)
 		label.font_size = 24 if i==0 else 40
 		label.pixel_size = 0.008
@@ -172,6 +179,8 @@ func _build_world() -> void:
 				var sphere := SphereMesh.new()
 				sphere.radius = 0.025
 				sphere.height = 0.05
+				sphere.radial_segments=6
+				sphere.rings=4
 				dot.mesh = sphere
 				dot.material_override = fx.glow_material(Color("8278b8"))
 				dot.position = _cell(i).lerp(_cell(i+1),j/5.0)
@@ -224,6 +233,7 @@ func _build_world() -> void:
 		card.add_child(area)
 		cards.append(card)
 	front_caption=Label3D.new()
+	front_caption.font=GameFont
 	front_caption.billboard=BaseMaterial3D.BILLBOARD_ENABLED
 	front_caption.font_size=30
 	front_caption.outline_size=3
@@ -346,6 +356,8 @@ func _build_ui() -> void:
 	help.modulate = Color("b7a3ca")
 	help.add_theme_font_size_override("font_size",14)
 	layer.add_child(help)
+	for child in layer.get_children():
+		if child is Control:child.theme=game_theme
 
 func _toggle_sound() -> void:
 	fx.sound_enabled=not fx.sound_enabled
@@ -433,6 +445,8 @@ func _new_game(count: int) -> void:
 		var sphere := SphereMesh.new()
 		sphere.radius=0.16
 		sphere.height=0.32
+		sphere.radial_segments=16
+		sphere.rings=8
 		head.mesh=sphere
 		head.material_override=_material(COLORS[i].lightened(0.14))
 		head.position.y=0.5
@@ -442,6 +456,8 @@ func _new_game(count: int) -> void:
 			var eye_shape:=SphereMesh.new()
 			eye_shape.radius=.048
 			eye_shape.height=.096
+			eye_shape.radial_segments=8
+			eye_shape.rings=4
 			eye.mesh=eye_shape
 			eye.material_override=fx.glow_material(Color("f9f5ff"))
 			eye.position=Vector3(side*.057,.51,.125)
@@ -450,6 +466,8 @@ func _new_game(count: int) -> void:
 			var pupil_shape:=SphereMesh.new()
 			pupil_shape.radius=.022
 			pupil_shape.height=.044
+			pupil_shape.radial_segments=8
+			pupil_shape.rings=4
 			pupil.mesh=pupil_shape
 			pupil.material_override=fx.glow_material(Color("25213b"))
 			pupil.position=Vector3(side*.057,.51,.167)
@@ -509,6 +527,7 @@ func _refresh() -> void:
 			answer_box.add_child(button)
 		panel.add_theme_stylebox_override("panel",_style(Color("1e2137"),Color("65548b")))
 		status.modulate=Color("e5d6f4")
+	_queue_web_state()
 
 func _clear_answers() -> void:
 	for child in answer_box.get_children():
@@ -585,6 +604,29 @@ func _enable_answers() -> void:
 	phase="answer"
 	for child in answer_box.get_children():
 		if child is BaseButton:child.disabled=false
+	_queue_web_state()
+
+func _queue_web_state() -> void:
+	if not OS.has_feature("web") or web_state_pending:return
+	web_state_pending=true
+	call_deferred("_publish_web_state")
+
+func _publish_web_state() -> void:
+	await get_tree().process_frame
+	web_state_pending=false
+	var controls: Array=[]
+	_collect_web_controls(hud,controls)
+	var payload: Dictionary={"phase":phase,"turn":turn,"remaining":deck.size(),"players":players,"viewport":[get_viewport().get_visible_rect().size.x,get_viewport().get_visible_rect().size.y],"question":{"id":active.get("id",""),"type":active.get("type",""),"level":active.get("level",0)},"controls":controls}
+	print("PHYSOGEZIC_STATE:"+JSON.stringify(payload))
+
+func _collect_web_controls(node: Node, output: Array) -> void:
+	if node is Button and node.is_visible_in_tree() and not node.disabled:
+		var rect: Rect2=node.get_global_rect()
+		output.append({"text":node.text,"rect":[rect.position.x,rect.position.y,rect.size.x,rect.size.y]})
+	for child in node.get_children():_collect_web_controls(child,output)
+
+func _input(event: InputEvent) -> void:
+	if OS.has_feature("web") and ((event is InputEventMouseButton and event.pressed) or (event is InputEventKey and event.pressed)):_queue_web_state()
 
 func _front_texture(q: Dictionary) -> ViewportTexture:
 	front_viewport=SubViewport.new()
@@ -634,6 +676,8 @@ func _front_texture(q: Dictionary) -> ViewportTexture:
 	footer.add_theme_font_size_override("font_size",22)
 	footer.modulate=Color("a391b1")
 	front_viewport.add_child(footer)
+	for child in front_viewport.get_children():
+		if child is Control:child.theme=game_theme
 	return front_viewport.get_texture()
 
 func _check_pairs() -> void:
@@ -722,6 +766,7 @@ func _show_victory(ranked: Array, tied: bool) -> void:
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	victory_panel.add_child(shade)
 	var reward:=PanelContainer.new()
+	reward.theme=game_theme
 	reward.position=Vector2(300,150)
 	reward.custom_minimum_size=Vector2(680,490)
 	reward.add_theme_stylebox_override("panel",_style(Color("25243c"),Color("d7b56e")))
@@ -772,6 +817,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		if hit and hit.collider.has_meta("slot"):_open_card(int(hit.collider.get_meta("slot")))
 
 func _smoke_test() -> void:
+	for symbol in [0x2605,0x25b6,0x2192]:
+		var bundled: bool=GameFont.base_font.has_char(symbol)
+		for fallback in GameFont.fallbacks:bundled=bundled or fallback.has_char(symbol)
+		assert(bundled,"Browser symbol fallback must be bundled: "+str(symbol))
 	var seen: Dictionary={}
 	var turns_played: int=0
 	while phase!="finished" and turns_played<45:

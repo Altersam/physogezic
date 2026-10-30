@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: npm test
-      - run: python tools/build_site.py
+      - run: python tools/build_site.py --web-only
   godot:
     runs-on: ubuntu-latest
     steps:
@@ -35,6 +35,18 @@ jobs:
           include-templates: false
       - name: Verify real gameplay and animated feedback
         run: python tools/check_godot.py --godot godot
+      - uses: actions/cache@v4
+        with:
+          path: /tmp/opencode/godot-web-4.5.1
+          key: godot-web-nothreads-4.5.1-v1
+      - name: Verify WebGL export and complete site
+        run: |
+          python tools/export_godot_web.py --godot godot
+          python tools/build_site.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: physogezic-browser-site
+          path: dist/site
       - name: Source project for opening in Godot
         uses: actions/upload-artifact@v4
         with:

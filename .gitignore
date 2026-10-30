@@ -1,6 +1,7 @@
 /data/
 /dist/
 /build/
+/godot/
 /node_modules/
 /.sync-manifest.json
 *.log

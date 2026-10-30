@@ -26,7 +26,18 @@ jobs:
           python-version: '3.12'
       - name: Verify game rules
         run: npm test
-      - name: Build static web edition
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: '4.5.1'
+          use-dotnet: false
+          include-templates: false
+      - uses: actions/cache@v4
+        with:
+          path: /tmp/opencode/godot-web-4.5.1
+          key: godot-web-nothreads-4.5.1-v1
+      - name: Export Godot to WebGL
+        run: python tools/export_godot_web.py --godot godot
+      - name: Build launcher and both browser games
         run: python tools/build_site.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
