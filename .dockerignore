@@ -1,0 +1,16 @@
+.git
+.github
+.godot
+Godot3D
+physogezic
+data
+dist
+build
+node_modules
+tests
+tools
+*.zip
+*.docx
+*.pdf
+*.log
+__pycache__

@@ -1,293 +1,47 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Физогэзик: ОГЭ — прототип</title>
-<style>
-:root {
-  --bg:#100b2c; --panel:#1c1447; --panel2:#25195f; --violet:#9d1be5; --violet2:#6f50ae;
-  --lime:#9ee565; --text:#ffffff; --muted:#c6bddf; --good:#8ee28c; --bad:#ff8d9a;
-}
-* { box-sizing:border-box; }
-body {
-  margin:0; min-height:100vh; color:var(--text);
-  font-family:Inter,Segoe UI,Arial,sans-serif;
-  background: radial-gradient(circle at 20% 10%, #35226f 0, transparent 30%),
-              radial-gradient(circle at 80% 20%, #2b1a67 0, transparent 28%),
-              linear-gradient(180deg,#100b2c,#09061c);
-}
-button,input,select { font:inherit; }
-.app { max-width:1500px; margin:0 auto; padding:20px; }
-header { display:flex; gap:14px; align-items:center; justify-content:space-between; margin-bottom:16px; }
-.brand { display:flex; align-items:center; gap:12px; }
-.brand img { width:64px; height:64px; object-fit:contain; border-radius:16px; background:#8e79c8; }
-h1 { font-size:clamp(24px,3vw,42px); margin:0; }
-.sub { color:var(--muted); font-size:14px; }
-.grid { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr); gap:18px; }
-.card {
-  background:linear-gradient(180deg,rgba(44,31,103,.96),rgba(24,17,64,.96));
-  border:1px solid rgba(255,255,255,.12); border-radius:24px;
-  box-shadow:0 18px 60px rgba(0,0,0,.28); overflow:hidden;
-}
-.board-wrap { position:relative; aspect-ratio:1/1; background:#171038; }
-.board-img { width:100%; height:100%; object-fit:cover; display:block; opacity:.88; }
-.track { position:absolute; inset:0; }
-.cell {
-  position:absolute; width:46px; height:46px; transform:translate(-50%,-50%);
-  border-radius:50%; display:grid; place-items:center; font-weight:800; font-size:14px;
-  background:rgba(157,27,229,.9); border:5px solid rgba(137,112,191,.95);
-  box-shadow:0 0 18px rgba(165,81,255,.45);
-}
-.token {
-  position:absolute; width:30px; height:30px; border-radius:50%;
-  transform:translate(-50%,-50%); border:3px solid #fff; display:grid; place-items:center;
-  font-size:11px; font-weight:900; transition:left .45s ease, top .45s ease, transform .25s ease;
-  box-shadow:0 6px 16px rgba(0,0,0,.4); z-index:8;
-}
-.t0{background:#42d3ff} .t1{background:#ffb74d} .t2{background:#81e687} .t3{background:#ff76c8}
-.panel { padding:20px; }
-.player-row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
-.player-chip { padding:8px 10px; border-radius:999px; background:#211857; border:1px solid rgba(255,255,255,.12); color:var(--muted); }
-.player-chip.active { background:#4a2f8f; color:#fff; outline:2px solid rgba(157,27,229,.6); }
-.phase-title { margin:0 0 8px; font-size:22px; }
-.mascot { width:88px; height:88px; object-fit:contain; float:right; margin-left:10px; border-radius:20px; background:#9c83da; }
-.question { font-size:18px; line-height:1.5; margin:14px 0; min-height:120px; }
-.topic { color:#c9b8ff; font-size:13px; letter-spacing:.08em; text-transform:uppercase; }
-.actions { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:14px 0; }
-.btn {
-  border:0; border-radius:16px; padding:14px 12px; cursor:pointer;
-  color:#fff; font-weight:800; transition:.2s; background:#6c4bae;
-}
-.btn:hover { transform:translateY(-2px); filter:brightness(1.08); }
-.btn.primary { background:#9d1be5; }
-.btn.good { background:#2f8f5b; }
-.btn.bad { background:#8d3551; }
-.btn.ghost { background:#2b2355; color:#d8d1eb; }
-textarea {
-  width:100%; min-height:92px; resize:vertical; padding:12px 14px; border-radius:14px;
-  background:#120d33; border:1px solid #554790; color:#fff; outline:none;
-}
-.answer-box { display:none; margin-top:14px; padding:14px; border-radius:16px; background:#15103b; border-left:4px solid var(--lime); line-height:1.45; }
-.answer-box.show { display:block; }
-.status { margin-top:14px; padding:12px 14px; border-radius:14px; background:#15103b; color:#d7d0ea; }
-.setup { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.setup label { display:flex; flex-direction:column; gap:6px; color:#d7d0ea; font-size:13px; }
-.setup input,.setup select { background:#120d33; color:#fff; border:1px solid #554790; border-radius:12px; padding:10px; }
-.small { font-size:12px; color:#bcb1dc; }
-.footer-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
-@media(max-width:980px) { .grid{grid-template-columns:1fr} }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#7860c8">
+  <meta name="description" content="Физогэзик — настольная игра в браузере для подготовки к ОГЭ по физике. 45 карточек, пять тем, игра одному или с друзьями.">
+  <title>Физогэзик — физика в игре</title>
+  <link rel="icon" href="assets/happy.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="adventure.css">
+  <link rel="stylesheet" href="math.css">
+  <link rel="stylesheet" href="rooms.css">
+  <link rel="stylesheet" href="motion.css">
+  <link rel="stylesheet" href="table.css">
+  <script defer src="math.js"></script>
+  <script defer src="journal.js"></script>
+  <script defer src="questions.js"></script>
+  <script defer src="engine.js"></script>
+  <script defer src="campaign.js"></script>
+  <script defer src="adventure-ui.js"></script>
+  <script defer src="table-view.js"></script>
+  <script defer src="room-ui.js"></script>
+  <script defer src="app.js"></script>
 </head>
 <body>
-<div class="app">
-  <header>
-    <div class="brand">
-      <img src="рубашка1.png" alt="Физогэзик">
-      <div>
-        <h1>Физогэзик: ОГЭ</h1>
-        <div class="sub">Виртуальная настольная игра по физике · прототип для Alterna</div>
-      </div>
-    </div>
-    <div class="small">Локальная игра · 1–4 игрока</div>
+  <a href="#main" class="skip-link">Перейти к игре</a>
+  <header class="header">
+    <a class="brand" href="#table" aria-label="Физогэзик, игровой стол"><img src="assets/happy.png" alt=""><span>физогэзик<span class="brand-caption">физика в игре</span></span></a>
+    <nav aria-label="Основная навигация">
+      <a href="#table" data-nav="table">Игровой стол</a>
+      <a href="#rooms" data-nav="rooms">С друзьями</a>
+      <a href="#home" data-nav="home">Приключение</a>
+      <a href="#library" data-nav="library">Карточки</a>
+      <a href="#formulas" data-nav="formulas">Формулы</a>
+      <a href="#progress" data-nav="progress">Прогресс</a>
+    </nav>
+    <button class="help-button" data-action="rules"><span>?</span> Как играть</button>
   </header>
-
-  <div class="grid">
-    <section class="card board-wrap">
-      <img class="board-img" src="поле физогэз (4).png" alt="Игровое поле">
-      <div class="track" id="track"></div>
-    </section>
-
-    <aside class="card panel">
-      <div id="setupScreen">
-        <img class="mascot" src="рубашка1.png" alt="">
-        <h2 class="phase-title">Новая партия</h2>
-        <p class="sub">Выберите число игроков. В свой ход игрок выбирает сложность: правильный ответ двигает фишку на 1, 2 или 3 клетки.</p>
-        <div class="setup">
-          <label>Игроков
-            <select id="playerCount">
-              <option value="1">1 игрок</option>
-              <option value="2" selected>2 игрока</option>
-              <option value="3">3 игрока</option>
-              <option value="4">4 игрока</option>
-            </select>
-          </label>
-          <label>Длина партии
-            <select id="finishMode">
-              <option value="15" selected>До клетки 15</option>
-              <option value="30">2 круга</option>
-            </select>
-          </label>
-          <label>Имя 1<input id="name1" value="Ньютон"></label>
-          <label>Имя 2<input id="name2" value="Фарадей"></label>
-          <label>Имя 3<input id="name3" value="Тесла"></label>
-          <label>Имя 4<input id="name4" value="Архимед"></label>
-        </div>
-        <div class="footer-actions">
-          <button class="btn primary" onclick="startGame()">Начать игру</button>
-        </div>
-      </div>
-
-      <div id="gameScreen" style="display:none">
-        <div class="player-row" id="players"></div>
-        <img class="mascot" id="mascot" src="рубашка1.png" alt="">
-        <div class="topic" id="topic">Ход игрока</div>
-        <h2 class="phase-title" id="turnTitle">Выберите сложность</h2>
-        <div class="question" id="question">Физогэзик ждёт ваш выбор.</div>
-
-        <div class="actions" id="difficultyBtns">
-          <button class="btn" onclick="drawQuestion(1)">1 балл</button>
-          <button class="btn primary" onclick="drawQuestion(2)">2 балла</button>
-          <button class="btn" onclick="drawQuestion(3)">3 балла</button>
-        </div>
-
-        <div id="answerArea" style="display:none">
-          <textarea id="playerAnswer" placeholder="Введите ответ или проговорите его вслух, затем откройте правильный ответ..."></textarea>
-          <div class="footer-actions">
-            <button class="btn ghost" onclick="showAnswer()">Показать ответ</button>
-          </div>
-          <div class="answer-box" id="answerBox"></div>
-          <div class="footer-actions" id="judgeBtns" style="display:none">
-            <button class="btn good" onclick="judge(true)">✓ Верно</button>
-            <button class="btn bad" onclick="judge(false)">✕ Неверно</button>
-          </div>
-        </div>
-
-        <div class="status" id="status">Игра ещё не началась.</div>
-        <div class="footer-actions">
-          <button class="btn ghost" onclick="resetGame()">Новая партия</button>
-        </div>
-      </div>
-    </aside>
-  </div>
-</div>
-
-<script>
-const QUESTIONS = [{"id": 1, "points": 1, "topic": "Механика", "q": "Сформулируйте первый закон Ньютона.", "a": "Если на тело не действуют силы или их действие скомпенсировано, то скорость тела не изменяется."}, {"id": 2, "points": 1, "topic": "Механика", "q": "Сформулируйте второй закон Ньютона.", "a": "Ускорение тела в инерциальной системе отсчёта прямо пропорционально приложенной к нему силе (или равнодействующей сил) и обратно пропорционально массе."}, {"id": 3, "points": 1, "topic": "Электричество", "q": "Назовите закон Ома.", "a": "I = U / R"}, {"id": 4, "points": 1, "topic": "Тепловые явления", "q": "Назовите три вида теплопередачи.", "a": "Теплопроводность, конвекция, излучение."}, {"id": 5, "points": 1, "topic": "Оптика", "q": "Напишите формулу тонкой линзы.", "a": "1/F = 1/f + 1/d"}, {"id": 6, "points": 2, "topic": "Тепловые явления", "q": "Из металлической или керамической кружки легче пить горячий чай, не обжигая губы? Ответ поясните.", "a": "Из керамической. Теплопроводность металла намного больше теплопроводности керамики, поэтому керамическая кружка нагревается медленнее."}, {"id": 7, "points": 2, "topic": "Механика", "q": "Объясните главное назначение рычага.", "a": "Главное назначение рычага — давать выигрыш в силе. Правильно подобрав расстояние до опоры, можно поднять груз, вес которого намного больше приложенной силы."}, {"id": 8, "points": 2, "topic": "Механика", "q": "Напишите формулы для кинетической и потенциальной энергии.", "a": "Eкин = mV²/2; Eпот = mgh или kΔx²/2."}, {"id": 9, "points": 2, "topic": "Электричество", "q": "Кто вычислил зависимость силы тока от напряжения в металлах?", "a": "Ом."}, {"id": 10, "points": 2, "topic": "Электричество", "q": "Кто изобрёл первый гальванический элемент?", "a": "Алессандро Вольта."}, {"id": 11, "points": 3, "topic": "Электромагнетизм", "q": "Кому принадлежат открытия: магнитное действие электрического тока и электромагнитная индукция?", "a": "Магнитное действие электрического тока — Х. К. Эрстед; электромагнитная индукция — М. Фарадей."}, {"id": 12, "points": 3, "topic": "Атомная физика", "q": "В процессе электризации нейтральный атом превратился в положительный ион. Как изменятся число электронов и протонов?", "a": "Число электронов уменьшается, число протонов не изменяется."}, {"id": 13, "points": 3, "topic": "Тепловые явления", "q": "Почему вода кипит быстрее на большой высоте, чем у уровня моря?", "a": "На больших высотах атмосферное давление уменьшается, поэтому вода кипит при более низкой температуре."}, {"id": 14, "points": 3, "topic": "Звук", "q": "Почему звук распространяется быстрее в воде, чем в воздухе?", "a": "Скорость звука зависит от свойств среды. Вода имеет большую упругость, поэтому звук в ней распространяется быстрее, чем в воздухе."}, {"id": 15, "points": 3, "topic": "Оптика", "q": "На белой бумаге написано красными чернилами слово. Через стекло какого цвета не удастся прочесть написанное?", "a": "Через красное стекло: и бумага, и красные чернила будут выглядеть красными, поэтому контраст исчезнет."}];
-const positions = [
-  [57,79],[42,77],[27,72],[16,63],[11,50],[15,37],[25,26],[35,17],
-  [47,10],[62,10],[76,12],[88,18],[93,30],[94,44],[91,60]
-];
-let players=[], current=0, currentQuestion=null, finishAt=15;
-let used={1:new Set(),2:new Set(),3:new Set()};
-
-function buildBoard(){
-  const track=document.getElementById('track'); track.innerHTML='';
-  positions.forEach((p,i)=>{
-    const c=document.createElement('div');
-    c.className='cell'; c.style.left=p[0]+'%'; c.style.top=p[1]+'%'; c.textContent=i+1;
-    track.appendChild(c);
-  });
-}
-
-function startGame(){
-  const n=+document.getElementById('playerCount').value;
-  finishAt=+document.getElementById('finishMode').value;
-  players=[];
-  for(let i=0;i<n;i++){
-    players.push({name:document.getElementById('name'+(i+1)).value.trim()||('Игрок '+(i+1)), pos:0, score:0});
-  }
-  current=0; currentQuestion=null; used={1:new Set(),2:new Set(),3:new Set()};
-  document.getElementById('setupScreen').style.display='none';
-  document.getElementById('gameScreen').style.display='block';
-  renderPlayers(); renderTokens(); nextTurnUI();
-}
-
-function renderPlayers(){
-  const row=document.getElementById('players'); row.innerHTML='';
-  players.forEach((p,i)=>{
-    const el=document.createElement('div');
-    el.className='player-chip'+(i===current?' active':'');
-    el.textContent=`${p.name} · ${p.pos}/${finishAt}`;
-    row.appendChild(el);
-  });
-}
-
-function renderTokens(){
-  const track=document.getElementById('track');
-  [...track.querySelectorAll('.token')].forEach(x=>x.remove());
-  players.forEach((p,i)=>{
-    const t=document.createElement('div');
-    t.className='token t'+i; t.textContent=i+1;
-    let idx=Math.max(0,Math.min(14,((p.pos-1)%15)));
-    let base = p.pos===0 ? [67,82] : positions[idx];
-    const offsets=[[-2,-2],[2,-2],[-2,2],[2,2]];
-    t.style.left=(base[0]+offsets[i][0])+'%'; t.style.top=(base[1]+offsets[i][1])+'%';
-    track.appendChild(t);
-  });
-}
-
-function nextTurnUI(){
-  renderPlayers();
-  const p=players[current];
-  document.getElementById('turnTitle').textContent=`Ход: ${p.name}`;
-  document.getElementById('topic').textContent='Выберите сложность';
-  document.getElementById('question').textContent='Рискнуть на 3 клетки или взять более простой вопрос?';
-  document.getElementById('difficultyBtns').style.display='grid';
-  document.getElementById('answerArea').style.display='none';
-  document.getElementById('answerBox').classList.remove('show');
-  document.getElementById('judgeBtns').style.display='none';
-  document.getElementById('playerAnswer').value='';
-  document.getElementById('status').textContent=`Сейчас отвечает ${p.name}.`;
-  document.getElementById('mascot').src='рубашка1.png';
-}
-
-function drawQuestion(points){
-  let pool=QUESTIONS.filter(q=>q.points===points);
-  let available=pool.filter(q=>!used[points].has(q.id));
-  if(!available.length){ used[points].clear(); available=pool; }
-  currentQuestion=available[Math.floor(Math.random()*available.length)];
-  used[points].add(currentQuestion.id);
-  document.getElementById('topic').textContent=`${currentQuestion.topic} · ${points} балл${points===1?'':'а'}`;
-  document.getElementById('question').textContent=currentQuestion.q;
-  document.getElementById('difficultyBtns').style.display='none';
-  document.getElementById('answerArea').style.display='block';
-  document.getElementById('answerBox').classList.remove('show');
-  document.getElementById('judgeBtns').style.display='none';
-  document.getElementById('status').textContent='Обсудите ответ. Затем откройте правильный вариант и оцените ответ.';
-  document.getElementById('mascot').src='рубашка2.png';
-}
-
-function showAnswer(){
-  const box=document.getElementById('answerBox');
-  box.innerHTML='<b>Ответ Физогэзика:</b><br>'+currentQuestion.a;
-  box.classList.add('show');
-  document.getElementById('judgeBtns').style.display='flex';
-  document.getElementById('mascot').src='рубашка3.png';
-}
-
-function judge(ok){
-  const p=players[current];
-  if(ok){
-    p.pos += currentQuestion.points;
-    p.score += currentQuestion.points;
-    document.getElementById('status').textContent=`Верно! +${currentQuestion.points} клетк${currentQuestion.points===1?'а':'и'}.`;
-    renderTokens();
-    if(p.pos>=finishAt){
-      renderPlayers();
-      document.getElementById('turnTitle').textContent=`Победа: ${p.name}!`;
-      document.getElementById('topic').textContent='Финиш';
-      document.getElementById('question').textContent=`${p.name} первым достигает финиша. Физогэзик доволен!`;
-      document.getElementById('answerArea').style.display='none';
-      document.getElementById('difficultyBtns').style.display='none';
-      document.getElementById('mascot').src='рубашка1.png';
-      return;
-    }
-  } else {
-    document.getElementById('status').textContent='Ответ не засчитан. Фишка остаётся на месте.';
-  }
-  current=(current+1)%players.length;
-  setTimeout(nextTurnUI,650);
-}
-
-function resetGame(){
-  document.getElementById('setupScreen').style.display='block';
-  document.getElementById('gameScreen').style.display='none';
-  players=[]; current=0;
-  buildBoard();
-}
-
-buildBoard();
-</script>
+  <div id="storage-warning" class="storage-warning" role="status" hidden>Браузер не разрешил сохранение. Игра работает, но после закрытия прогресс может потеряться. Для сохранения запустите её через npm start.</div>
+  <main id="main" tabindex="-1"></main>
+  <footer><span>Создано на основе настолки «Физогэзик»</span><span class="local-status"><i></i> Без интернета и регистрации</span><button data-action="about">О материалах</button></footer>
+  <dialog id="dialog" aria-labelledby="dialog-title"><div id="dialog-content"></div></dialog>
+  <div id="toast" class="toast" role="status"></div>
+  <noscript><p>Для игры включите JavaScript в настройках браузера.</p></noscript>
 </body>
 </html>

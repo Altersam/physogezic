@@ -1,0 +1,43 @@
+name: Verify web and Godot
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm test
+      - run: python tools/build_site.py
+  godot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: '4.5.1'
+          use-dotnet: false
+          include-templates: false
+      - name: Verify real gameplay and animated feedback
+        run: python tools/check_godot.py --godot godot
+      - name: Source project for opening in Godot
+        uses: actions/upload-artifact@v4
+        with:
+          name: physogezic-godot-project
+          path: Godot3D
+          include-hidden-files: false

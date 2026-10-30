@@ -1,0 +1,16 @@
+{
+  "name": "fizogezik",
+  "version": "4.1.0",
+  "private": true,
+  "description": "Цифровая настольная игра для подготовки к ОГЭ по физике",
+  "scripts": {
+    "start": "node server.cjs",
+    "test": "node --test tests/*.test.cjs",
+    "balance": "node tools/balance.cjs",
+    "build:site": "python tools/build_site.py",
+    "test:godot": "python tools/check_godot.py"
+  },
+  "engines": {"node": ">=20"},
+  "repository": {"type": "git", "url": "https://github.com/Altersam/physogezic.git"},
+  "homepage": "https://altersam.github.io/physogezic/"
+}

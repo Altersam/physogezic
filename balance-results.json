@@ -1,0 +1,222 @@
+{
+  "modelVersion": 1,
+  "seed": 20261029,
+  "trials": 1500,
+  "rules": {
+    "version": 1,
+    "lives": 5,
+    "correctXP": 10,
+    "retryXP": 5,
+    "comboStart": 3,
+    "comboBonus": 5,
+    "clearXP": 25,
+    "bossXP": 50,
+    "clearGems": 15,
+    "bossGems": 35,
+    "dailyXP": 50
+  },
+  "knownCase": {
+    "won": true,
+    "actions": 5,
+    "xp": 90
+  },
+  "targets": {
+    "ordinaryAt70Percent": ".85–1 win rate with optional shield",
+    "normalActions": "5–10",
+    "bossActions": "6–11"
+  },
+  "scenarios": [
+    {
+      "accuracy": 0,
+      "boss": false,
+      "shield": false,
+      "winRate": 0,
+      "meanActions": 5,
+      "p90Actions": 5,
+      "meanXP": 0
+    },
+    {
+      "accuracy": 0,
+      "boss": false,
+      "shield": true,
+      "winRate": 0,
+      "meanActions": 6,
+      "p90Actions": 6,
+      "meanXP": 0
+    },
+    {
+      "accuracy": 0,
+      "boss": true,
+      "shield": false,
+      "winRate": 0,
+      "meanActions": 5,
+      "p90Actions": 5,
+      "meanXP": 0
+    },
+    {
+      "accuracy": 0,
+      "boss": true,
+      "shield": true,
+      "winRate": 0,
+      "meanActions": 6,
+      "p90Actions": 6,
+      "meanXP": 0
+    },
+    {
+      "accuracy": 0.5,
+      "boss": false,
+      "shield": false,
+      "winRate": 0.497,
+      "meanActions": 7.56,
+      "p90Actions": 9,
+      "meanXP": 47.2
+    },
+    {
+      "accuracy": 0.5,
+      "boss": false,
+      "shield": true,
+      "winRate": 0.639,
+      "meanActions": 8.27,
+      "p90Actions": 10,
+      "meanXP": 53.1
+    },
+    {
+      "accuracy": 0.5,
+      "boss": true,
+      "shield": false,
+      "winRate": 0.368,
+      "meanActions": 8.29,
+      "p90Actions": 10,
+      "meanXP": 57.9
+    },
+    {
+      "accuracy": 0.5,
+      "boss": true,
+      "shield": true,
+      "winRate": 0.471,
+      "meanActions": 9.24,
+      "p90Actions": 11,
+      "meanXP": 65
+    },
+    {
+      "accuracy": 0.7,
+      "boss": false,
+      "shield": false,
+      "winRate": 0.905,
+      "meanActions": 6.85,
+      "p90Actions": 9,
+      "meanXP": 71.5
+    },
+    {
+      "accuracy": 0.7,
+      "boss": false,
+      "shield": true,
+      "winRate": 0.951,
+      "meanActions": 6.99,
+      "p90Actions": 9,
+      "meanXP": 73.3
+    },
+    {
+      "accuracy": 0.7,
+      "boss": true,
+      "shield": false,
+      "winRate": 0.833,
+      "meanActions": 8.08,
+      "p90Actions": 10,
+      "meanXP": 99.9
+    },
+    {
+      "accuracy": 0.7,
+      "boss": true,
+      "shield": true,
+      "winRate": 0.927,
+      "meanActions": 8.27,
+      "p90Actions": 10,
+      "meanXP": 106.6
+    },
+    {
+      "accuracy": 0.9,
+      "boss": false,
+      "shield": false,
+      "winRate": 0.999,
+      "meanActions": 5.53,
+      "p90Actions": 7,
+      "meanXP": 84.8
+    },
+    {
+      "accuracy": 0.9,
+      "boss": false,
+      "shield": true,
+      "winRate": 1,
+      "meanActions": 5.57,
+      "p90Actions": 7,
+      "meanXP": 84.4
+    },
+    {
+      "accuracy": 0.9,
+      "boss": true,
+      "shield": false,
+      "winRate": 0.998,
+      "meanActions": 6.64,
+      "p90Actions": 8,
+      "meanXP": 123.1
+    },
+    {
+      "accuracy": 0.9,
+      "boss": true,
+      "shield": true,
+      "winRate": 1,
+      "meanActions": 6.64,
+      "p90Actions": 8,
+      "meanXP": 123.4
+    },
+    {
+      "accuracy": 1,
+      "boss": false,
+      "shield": false,
+      "winRate": 1,
+      "meanActions": 5,
+      "p90Actions": 5,
+      "meanXP": 90
+    },
+    {
+      "accuracy": 1,
+      "boss": false,
+      "shield": true,
+      "winRate": 1,
+      "meanActions": 5,
+      "p90Actions": 5,
+      "meanXP": 90
+    },
+    {
+      "accuracy": 1,
+      "boss": true,
+      "shield": false,
+      "winRate": 1,
+      "meanActions": 6,
+      "p90Actions": 6,
+      "meanXP": 130
+    },
+    {
+      "accuracy": 1,
+      "boss": true,
+      "shield": true,
+      "winRate": 1,
+      "meanActions": 6,
+      "p90Actions": 6,
+      "meanXP": 130
+    }
+  ],
+  "perfectCampaign": {
+    "missions": 20,
+    "xp": 2000,
+    "gems": 550
+  },
+  "assumptions": [
+    "Independent answer accuracy; not a real learner model.",
+    "No hints or knowledge improvement after a mistake.",
+    "Unlimited immediate retries; lives reset per mission.",
+    "First-clear currency is capped; cosmetics do not change answers."
+  ],
+  "verdict": "PASS"
+}

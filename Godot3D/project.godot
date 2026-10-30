@@ -1,0 +1,24 @@
+; Small, separate 3D table prototype. Main playable version is the web game.
+config_version=5
+
+[application]
+config/name="Физогэзик — 3D стол"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.5", "GL Compatibility")
+config/icon="res://assets/happy.png"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=800
+window/size/window_width_override=1280
+window/size/window_height_override=800
+window/stretch/mode="canvas_items"
+
+[debug]
+file_logging/enable_file_logging=false
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+environment/defaults/default_clear_color=Color(0.085,0.07,0.12,1)
