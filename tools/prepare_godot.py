@@ -13,6 +13,8 @@ for name in ('happy.png','mascot.png','card-1.webp'):
     shutil.copy2(ROOT/'assets'/name,PROJECT/'assets'/name)
 raw=subprocess.check_output(['node','-e',"process.stdout.write(JSON.stringify(require('./questions.js').questions))"],cwd=ROOT)
 (PROJECT/'data'/'questions.json').write_bytes(raw)
+experiments=subprocess.check_output(['node','-e',"process.stdout.write(JSON.stringify(require('./experiments.js')))"],cwd=ROOT)
+(PROJECT/'data'/'experiments.json').write_bytes(experiments)
 executables=list(EDITOR.glob('*_console.exe'))
 if not executables:
     url='https://github.com/godotengine/godot-builds/releases/download/4.5.1-stable/Godot_v4.5.1-stable_win64.exe.zip'

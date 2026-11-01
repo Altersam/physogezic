@@ -1,10 +1,11 @@
 {
   "name": "fizogezik",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "private": true,
   "description": "Цифровая настольная игра для подготовки к ОГЭ по физике",
   "scripts": {
     "start": "node server.cjs",
+    "dev": "node server.cjs",
     "test": "node --test tests/*.test.cjs",
     "balance": "node tools/balance.cjs",
     "build:site": "python tools/build_site.py",

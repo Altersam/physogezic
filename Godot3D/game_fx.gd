@@ -10,6 +10,8 @@ var hud: CanvasLayer
 var dynamic: Node3D
 var dust: Array[MeshInstance3D] = []
 var dust_origins: Array[Vector3] = []
+var stars: Array[MeshInstance3D] = []
+var star_sizes: Array[float] = []
 var time: float = 0.0
 var shake: float = 0.0
 var shake_left: float = 0.0
@@ -45,6 +47,20 @@ func setup(view: Camera3D, character: Sprite3D, canvas: CanvasLayer) -> void:
 		dust.append(mote)
 		dust_origins.append(mote.position)
 		add_child(mote)
+	# Далёкое звёздное небо: два слоя глубины, мерцание в _process.
+	for i in range(96):
+		var star:=MeshInstance3D.new()
+		var shape:=SphereMesh.new()
+		var radius: float=rng.randf_range(0.012,0.045)
+		shape.radius=radius
+		shape.height=radius*2
+		star.mesh=shape
+		var tint:=Color("e9d9ff") if i%4==0 else Color("ffe9c4") if i%4==1 else Color("cfe0ff")
+		star.material_override=glow_material(tint)
+		star.position=Vector3(rng.randf_range(-13.0,13.0),rng.randf_range(0.8,8.5),rng.randf_range(-11.0,-4.0))
+		stars.append(star)
+		star_sizes.append(rng.randf_range(0.5,1.3))
+		add_child(star)
 
 func glow_material(color: Color) -> StandardMaterial3D:
 	var mat:=StandardMaterial3D.new()
@@ -92,6 +108,8 @@ func _process(delta: float) -> void:
 		dust[i].position=dust_origins[i]+Vector3(sin(time*0.38+i)*0.13,sin(time*0.65+i*0.8)*0.16,cos(time*0.31+i)*0.11)
 		var pulse: float=0.6+sin(time*1.2+i)*0.35
 		dust[i].scale=Vector3.ONE*pulse
+	for i in range(stars.size()):
+		stars[i].scale=Vector3.ONE*star_sizes[i]*(0.75+sin(time*1.1+i*2.3)*0.3)
 	mascot_busy=maxf(0.0,mascot_busy-delta)
 	if mascot_busy<=0 and is_instance_valid(mascot):
 		mascot.position=mascot_origin+Vector3(0,sin(time*1.7)*0.065,0)
@@ -107,6 +125,7 @@ func _process(delta: float) -> void:
 func set_enabled(value: bool) -> void:
 	enabled=value
 	for mote in dust:mote.visible=value
+	for star in stars:star.visible=value
 	if not value:
 		clear_dynamic()
 		camera.h_offset=base_camera_offset
@@ -250,7 +269,10 @@ func answer_feedback(correct: bool, cell: Vector3, points: int, combo: int) -> v
 		shake_left=.18
 	else:
 		ripple(cell,Color("ffbf8c"),.8)
-		toast("РАЗБЕРЁМСЯ И ПОПРОБУЕМ ЕЩЁ",Color("ffd4aa"))
+		if points<0:floating_text("−1 КЛЕТКА",cell+Vector3(0,.6,0),Color("ffd0a8"))
+		toast("ОПЫТ: −1 · РАЗБЕРЁМСЯ" if points<0 else "РАЗБЕРЁМСЯ И ПОПРОБУЕМ ЕЩЁ",Color("ffd4aa"))
+		shake=.05
+		shake_left=.12
 
 func victory(location: Vector3) -> void:
 	tone("victory")
@@ -271,6 +293,7 @@ func tone(kind: String) -> void:
 	var player:=AudioStreamPlayer.new()
 	player.stream=sounds[kind]
 	player.volume_db=-18
+	player.pitch_scale=rng.randf_range(.96,1.045)
 	add_child(player)
 	audio.append(player)
 	player.finished.connect(player.queue_free)
@@ -293,7 +316,7 @@ func _make_sound(kind: String) -> AudioStreamWAV:
 		var index: int=mini(notes.size()-1,int(t/length))
 		var local: float=fmod(t,length)/length
 		var envelope: float=minf(1.0,local*18)*pow(1.0-local,1.5)
-		var wave: float=sin(TAU*float(notes[index])*t)*.7+sin(TAU*float(notes[index])*t*2)*.12
+		var wave: float=sin(TAU*float(notes[index])*t)*.6+sin(TAU*float(notes[index])*t*2)*.12+sin(TAU*float(notes[index])*t*.5)*.22
 		bytes.encode_s16(frame*2,int(wave*envelope*14000))
 	var stream:=AudioStreamWAV.new()
 	stream.format=AudioStreamWAV.FORMAT_16_BITS

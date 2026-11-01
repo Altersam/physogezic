@@ -3,6 +3,10 @@
 /build/
 /godot/
 /node_modules/
+/.test-deps/
+/physogezic/
+/.merge-base/
+/.merge-local/
 /.sync-manifest.json
 *.log
 *.zip

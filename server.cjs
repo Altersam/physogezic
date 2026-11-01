@@ -43,5 +43,6 @@ const server=http.createServer(async(req,res)=>{
   }catch(error){if(!res.headersSent)json(res,error.status||500,{error:error.status?error.message:'Не удалось сохранить или обработать комнату.'});if(!error.status){journal.error(error.message);console.error(error);}}
 });
 const timer=setInterval(()=>{let changed=false;for(const [code,room]of rooms){if(Date.now()-room.updatedAt>7*864e5){rooms.delete(code);changed=true;}else if(R.tick(room))changed=true;}if(changed)try{persist();}catch(e){journal.error(e.message);console.error(e.message);}},500);timer.unref();
-server.listen(Number(process.env.PORT)||4173,process.env.HOST||'0.0.0.0',()=>{console.log('Физогэзик: http://localhost:'+server.address().port);for(const url of bases({headers:{host:'localhost'}},server.address().port))console.log('Игрокам: '+url+'/#rooms');});
+const argv=process.argv.slice(2),argOf=flag=>{const i=argv.indexOf(flag);return i>-1?argv[i+1]:null;};
+server.listen(Number(argOf('--port'))||Number(process.env.PORT)||4173,argOf('--host')||process.env.HOST||'0.0.0.0',()=>{console.log('Физогэзик: http://localhost:'+server.address().port);for(const url of bases({headers:{host:'localhost'}},server.address().port))console.log('Игрокам: '+url+'/#rooms');});
 module.exports={server,rooms};

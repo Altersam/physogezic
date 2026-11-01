@@ -1,0 +1,84 @@
+/* Лаборатория: анимации SVG-опытов. Движение только на CSS —
+   глобальный prefers-reduced-motion в motion.css останавливает всё разом. */
+.xlab-stage{background:linear-gradient(150deg,#f8f4fd,#f1e9f8);border:1px solid #e4d9ef;border-radius:16px;padding:10px;margin:0 0 16px}
+.xlab{display:block;width:100%;height:auto}
+.xlab-caption{text-align:center;font-size:11px;font-weight:600;color:#7d6b90;margin-top:4px}
+.xlab text{font-family:"Segoe UI",Tahoma,Arial,sans-serif}
+.xlab-stage.small{padding:6px}
+
+.xa-swing{animation:xlab-swing 1.7s ease-in-out infinite alternate}
+@keyframes xlab-swing{from{transform:rotate(-26deg)}to{transform:rotate(26deg)}}
+.xa-fall{animation:xlab-fall 1.9s ease-in infinite}
+@keyframes xlab-fall{0%{transform:translateY(0);opacity:1}62%{transform:translateY(92px);opacity:1}78%{transform:translateY(92px);opacity:0}79%{transform:translateY(0);opacity:0}100%{transform:translateY(0);opacity:1}}
+.xa-roll{animation:xlab-roll 2.4s ease-in infinite}
+@keyframes xlab-roll{0%{transform:translate(228px,48px) rotate(0deg);opacity:1}70%{transform:translate(52px,124px) rotate(-420deg);opacity:1}85%{transform:translate(52px,124px) rotate(-420deg);opacity:0}86%{transform:translate(228px,48px);opacity:0}100%{transform:translate(228px,48px);opacity:1}}
+.xa-bounce{animation:xlab-bounce 1.6s ease-in-out infinite alternate}
+@keyframes xlab-bounce{from{transform:translateY(0)}to{transform:translateY(42px)}}
+.xa-tilt{animation:xlab-tilt 2.6s ease-in-out infinite alternate}
+@keyframes xlab-tilt{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}
+.xa-bob{animation:xlab-bob 2.4s ease-in-out infinite alternate}
+@keyframes xlab-bob{from{transform:translateY(-4px)}to{transform:translateY(4px)}}
+.xa-bob-rev{animation:xlab-bob 2.4s ease-in-out infinite alternate-reverse}
+.xa-cart{animation:xlab-cart 2.6s ease-in-out infinite}
+@keyframes xlab-cart{0%{transform:translateX(0)}45%,70%{transform:translateX(96px)}100%{transform:translateX(0)}}
+.xa-cart-hit{animation:xlab-cart-hit 2.6s ease-in-out infinite}
+@keyframes xlab-cart-hit{0%,45%{transform:translateX(0)}70%,80%{transform:translateX(26px)}100%{transform:translateX(0)}}
+.xa-slide{animation:xlab-slide 2.2s ease-in-out infinite}
+@keyframes xlab-slide{0%,100%{transform:translateX(0)}50%{transform:translateX(70px)}}
+.xa-rise{animation:xlab-rise 2.1s ease-in infinite}
+.xa-rise.d1{animation-delay:.7s}.xa-rise.d2{animation-delay:1.3s}
+@keyframes xlab-rise{0%{transform:translateY(0);opacity:0}25%{opacity:.95}100%{transform:translateY(-46px);opacity:0}}
+.xa-wisp{animation:xlab-wisp 2.6s ease-in-out infinite}
+@keyframes xlab-wisp{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-10px);opacity:1}}
+.xa-melt{transform-box:fill-box;transform-origin:50% 100%;animation:xlab-melt 4.5s ease-in-out infinite alternate}
+@keyframes xlab-melt{from{transform:scale(1)}to{transform:scale(.72)}}
+.xa-puddle{transform-box:fill-box;transform-origin:center;animation:xlab-puddle 4.5s ease-in-out infinite alternate}
+@keyframes xlab-puddle{from{transform:scaleX(.75);opacity:.4}to{transform:scaleX(1.1);opacity:.75}}
+.xa-puddle-rev{transform-box:fill-box;transform-origin:center;animation:xlab-puddle 4s ease-in-out infinite alternate-reverse}
+.xa-drip{animation:xlab-drip 2.8s ease-in infinite}
+.xa-drip.d1{animation-delay:.9s}.xa-drip.d2{animation-delay:1.7s}
+@keyframes xlab-drip{0%{transform:translateY(0);opacity:0}20%{opacity:1}80%{transform:translateY(46px);opacity:.9}100%{transform:translateY(52px);opacity:0}}
+.xa-flow{animation:xlab-flow 1.4s linear infinite}
+@keyframes xlab-flow{to{stroke-dashoffset:-56}}
+.xa-heat-line{animation:xlab-heat 2.4s ease-in-out infinite}
+@keyframes xlab-heat{0%{stroke-dashoffset:160;opacity:.4}60%{stroke-dashoffset:0;opacity:.95}100%{stroke-dashoffset:0;opacity:.5}}
+.xa-spin-slow{animation:xlab-spin 16s linear infinite}
+.xa-spin{animation:xlab-spin 4.6s linear infinite}
+@keyframes xlab-spin{to{transform:rotate(360deg)}}
+.xa-expand{transform-box:fill-box;transform-origin:center;animation:xlab-expand 2.6s ease-in-out infinite alternate}
+@keyframes xlab-expand{from{transform:scale(.85)}to{transform:scale(1.2)}}
+.xa-cork{animation:xlab-cork 2.8s ease-out infinite}
+@keyframes xlab-cork{0%,25%{transform:translate(0,0) rotate(0)}60%{transform:translate(58px,-34px) rotate(40deg);opacity:1}80%{transform:translate(66px,-40px) rotate(50deg);opacity:0}81%{transform:translate(0,0);opacity:0}100%{transform:translate(0,0);opacity:1}}
+.xa-glow{animation:xlab-glow 1.8s ease-in-out infinite alternate}
+@keyframes xlab-glow{from{opacity:.55}to{opacity:1}}
+.xa-needle{animation:xlab-needle 2.4s ease-in-out infinite alternate}
+@keyframes xlab-needle{from{transform:rotate(-18deg)}to{transform:rotate(32deg)}}
+.xa-mag-left{animation:xlab-mag-left 1.9s ease-in-out infinite alternate}
+.xa-mag-right{animation:xlab-mag 1.9s ease-in-out infinite alternate}
+@keyframes xlab-mag-left{from{transform:translateX(0)}to{transform:translateX(-14px)}}
+@keyframes xlab-mag{from{transform:translateX(0)}to{transform:translateX(14px)}}
+.xa-leaf-l{animation:xlab-leaf 2.2s ease-in-out infinite alternate}
+.xa-leaf-r{animation:xlab-leaf-r 2.2s ease-in-out infinite alternate}
+@keyframes xlab-leaf{from{transform:rotate(0)}to{transform:rotate(-9deg)}}
+@keyframes xlab-leaf-r{from{transform:rotate(0)}to{transform:rotate(9deg)}}
+.xa-fly{animation:xlab-fly 2.3s ease-out infinite}
+.xa-fly.d2{animation-delay:1.1s}
+@keyframes xlab-fly{0%{transform:translate(0,0);opacity:0}20%{opacity:1}75%{transform:translate(48px,-34px);opacity:1}100%{transform:translate(56px,-40px);opacity:0}}
+.xa-spread{transform-box:fill-box;transform-origin:center;animation:xlab-spread 3.4s ease-in-out infinite alternate}
+.xa-spread.d1{animation-delay:.4s}.xa-spread.d2{animation-delay:.8s}
+@keyframes xlab-spread{from{transform:scale(.55)}to{transform:scale(1.25)}}
+.xa-split-l{animation:xlab-split 2.6s ease-in-out infinite alternate}
+.xa-split-r{animation:xlab-split-r 2.6s ease-in-out infinite alternate}
+@keyframes xlab-split{from{transform:translateX(6px)}to{transform:translateX(-16px)}}
+@keyframes xlab-split-r{from{transform:translateX(-6px)}to{transform:translateX(16px)}}
+.xa-light-fast{animation:xlab-light 1.2s ease-in-out infinite alternate}
+.xa-light-slow{animation:xlab-light 2.2s ease-in-out infinite alternate}
+@keyframes xlab-light{from{transform:translateX(-26px)}to{transform:translateX(26px)}}
+.xa-wind{animation:xlab-wind 1.8s ease-in-out infinite alternate}
+@keyframes xlab-wind{from{transform:translateX(0);opacity:.5}to{transform:translateX(14px);opacity:1}}
+.xa-ray{animation:xlab-ray 1.6s ease-in-out infinite alternate}
+@keyframes xlab-ray{from{opacity:.45}to{opacity:1}}
+.xa-press{animation:xlab-press 1.8s ease-in-out infinite alternate}
+.xa-press.deep{animation-name:xlab-press-deep}
+@keyframes xlab-press{from{transform:translateY(0)}to{transform:translateY(3px)}}
+@keyframes xlab-press-deep{from{transform:translateY(0)}to{transform:translateY(7px)}}

@@ -4,9 +4,12 @@ const GOAL: int = 15
 const COLORS: Array[Color] = [Color("bda2ef"),Color("ffc586"),Color("87d7c8"),Color("ef9db9")]
 const Feedback=preload("res://game_fx.gd")
 const Journal=preload("res://journal.gd")
+const LabStage=preload("res://lab_stage.gd")
 const GameFont=preload("res://game_font.tres")
 const TOPICS: Dictionary={"mechanics":"Механика","heat":"Тепловые явления","electricity":"Электричество","optics":"Оптика","quantum":"Квантовые явления"}
 var questions: Array = []
+var experiments: Array = []
+var lab_enabled: bool = false
 var deck: Array = []
 var players: Array = []
 var pawns: Array[Node3D] = []
@@ -43,18 +46,25 @@ var response_badge: Label
 var progress: ProgressBar
 var victory_panel: Control
 var turn_halo: Sprite3D
+var finish_halo: Sprite3D
+var finish_light: MeshInstance3D
 var sound_button: Button
 var effect_button: Button
+var lab_button: Button
+var lab_stage: Node3D
 var web_state_pending: bool=false
 var game_theme: Theme
 
 func _ready() -> void:
-	smoke = OS.get_cmdline_user_args().has("--smoke")
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	smoke = args.has("--smoke") or args.has("--lab-test")
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/questions.json"))
-	if parsed is Array:
+	var lab_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/experiments.json"))
+	if parsed is Array and lab_parsed is Array:
 		questions = parsed
+		experiments = lab_parsed
 	else:
-		push_error("Question bank could not be read")
+		push_error("Question banks could not be read")
 		get_tree().quit(1)
 		return
 	journal=Journal.new()
@@ -63,6 +73,10 @@ func _ready() -> void:
 	fx=Feedback.new()
 	add_child(fx)
 	_build_world()
+	lab_stage=LabStage.new()
+	lab_stage.position=Vector3(-0.1,.36,-2.3)
+	lab_stage.scale=Vector3.ONE*.78
+	add_child(lab_stage)
 	_build_ui()
 	fx.setup(camera,mascot,hud)
 	if smoke:fx.set_enabled(false);fx.sound_enabled=false
@@ -70,11 +84,13 @@ func _ready() -> void:
 	turn_halo=fx.halo(Color("ffe1a2"),.8)
 	add_child(turn_halo)
 	_new_game(2)
-	if smoke:
+	if args.has("--lab-test"):
+		call_deferred("_lab_test")
+	elif smoke:
 		call_deferred("_smoke_test")
-	elif OS.get_cmdline_user_args().has("--effects-test"):
+	elif args.has("--effects-test"):
 		call_deferred("_effects_test")
-	elif OS.get_cmdline_user_args().has("--capture"):
+	elif args.has("--capture"):
 		call_deferred("_capture")
 
 func _material(color: Color) -> StandardMaterial3D:
@@ -185,6 +201,18 @@ func _build_world() -> void:
 				dot.material_override = fx.glow_material(Color("8278b8"))
 				dot.position = _cell(i).lerp(_cell(i+1),j/5.0)
 				add_child(dot)
+	# Финиш зовёт издалека: тёплое сияние и парящий золотой огонёк.
+	finish_halo=fx.halo(Color("ffdc8a"),1.7)
+	finish_halo.position=_cell(GOAL)+Vector3(0,.02,0)
+	add_child(finish_halo)
+	finish_light=MeshInstance3D.new()
+	var light_shape:=SphereMesh.new()
+	light_shape.radius=.09
+	light_shape.height=.18
+	finish_light.mesh=light_shape
+	finish_light.material_override=fx.glow_material(Color("ffe3a1"))
+	finish_light.position=_cell(GOAL)+Vector3(0,.6,0)
+	add_child(finish_light)
 	mascot = Sprite3D.new()
 	mascot.texture = load("res://assets/mascot.png")
 	mascot.pixel_size = 0.003
@@ -336,10 +364,15 @@ func _build_ui() -> void:
 	next_button = _button("Передать ход",_next_turn)
 	table_ui.add_child(next_button)
 	var options := HBoxContainer.new()
-	options.position = Vector2(28,735)
+	options.position = Vector2(28,655)
 	layer.add_child(options)
 	for n in range(1,5):
 		options.add_child(_button(str(n)+" игр.",_new_game.bind(n)))
+	lab_button=_button("Лаборатория: выкл",_toggle_lab)
+	lab_button.position=Vector2(420,25)
+	lab_button.custom_minimum_size=Vector2(190,36)
+	lab_button.add_theme_font_size_override("font_size",12)
+	layer.add_child(lab_button)
 	sound_button=_button("Звук: вкл",_toggle_sound)
 	sound_button.position=Vector2(620,25)
 	sound_button.custom_minimum_size=Vector2(120,36)
@@ -351,8 +384,8 @@ func _build_ui() -> void:
 	effect_button.add_theme_font_size_override("font_size",12)
 	layer.add_child(effect_button)
 	var help := Label.new()
-	help.text = "Кликни карту на столе или нажми 1 / 2 / 3.\nПравильный ответ = 1–3 клетки. Без таймера."
-	help.position = Vector2(28,685)
+	help.text = "Кликни карту на столе или нажми 1 / 2 / 3.\nОбычная карта: +1–3. Опыт: +1–3 или −1 за ошибку."
+	help.position = Vector2(28,600)
 	help.modulate = Color("b7a3ca")
 	help.add_theme_font_size_override("font_size",14)
 	layer.add_child(help)
@@ -366,7 +399,14 @@ func _toggle_sound() -> void:
 
 func _toggle_effects() -> void:
 	fx.set_enabled(not fx.enabled)
+	lab_stage.set_animated(fx.enabled)
 	effect_button.text="Эффекты: вкл" if fx.enabled else "Эффекты: выкл"
+
+func _toggle_lab() -> void:
+	lab_enabled=not lab_enabled
+	lab_button.text="Лаборатория: вкл" if lab_enabled else "Лаборатория: выкл"
+	_new_game(players.size())
+	if not smoke:fx.toast("95 КАРТ · 50 ОБЪЁМНЫХ ОПЫТОВ" if lab_enabled else "ИСХОДНАЯ КОЛОДА · 45 КАРТ",Color("ffe0a0"))
 
 func _pawn_at(index: int, cell: int) -> Vector3:
 	return _cell(cell)+Vector3((index-(players.size()-1)/2.0)*.45,.14,0)
@@ -387,6 +427,9 @@ func _process(delta: float) -> void:
 	if is_instance_valid(turn_halo) and not players.is_empty():
 		turn_halo.position=_pawn_at(turn,int(players[turn].score))+Vector3(0,-.11,0)
 		turn_halo.scale=Vector3.ONE*(1.0+sin(stage_time*3)*.08)
+	if is_instance_valid(finish_halo):
+		finish_halo.scale=Vector3.ONE*(1.0+sin(stage_time*2.2)*.14)
+		finish_light.position.y=_cell(GOAL).y+.6+sin(stage_time*1.8)*.1
 
 func _physics_process(_delta: float) -> void:
 	if smoke or phase!="draw":return
@@ -477,6 +520,7 @@ func _new_game(count: int) -> void:
 		pawn.position=_cell(0)+Vector3((i-(count-1)/2.0)*.45,.14,0)
 		pawns.append(pawn)
 	deck=questions.duplicate(true)
+	if lab_enabled:deck.append_array(experiments.duplicate(true))
 	deck.shuffle()
 	turn=0
 	phase="draw"
@@ -488,6 +532,8 @@ func _new_game(count: int) -> void:
 
 func _reset_cards() -> void:
 	front_caption.visible=false
+	lab_stage.hide_experiment()
+	mascot.visible=true
 	if is_instance_valid(front_viewport):front_viewport.queue_free()
 	if not smoke and fx.enabled:
 		phase="dealing"
@@ -539,6 +585,10 @@ func _open_card(slot: int) -> void:
 	active=deck.pop_at(slot)
 	phase="answer" if smoke or not fx.enabled else "opening"
 	selected_card=cards[slot]
+	var is_experiment: bool=str(active.get("kind",""))=="experiment"
+	if is_experiment:
+		lab_stage.show_experiment(active)
+		mascot.visible=false
 	if card_tween and card_tween.is_valid():card_tween.kill()
 	for card in cards:
 		card.get_node("HoverRing").visible=false
@@ -566,8 +616,8 @@ func _open_card(slot: int) -> void:
 		card_tween.tween_property(selected_card,"rotation:y",0.0,.6)
 		card_tween.tween_property(selected_card,"scale",Vector3.ONE*1.55,.55).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		card_tween.chain().tween_callback(_enable_answers)
-	status.text="Карта на "+str(int(active.level))+(" балл" if int(active.level)==1 else " балла")
-	question_label.text=str(active.prompt)
+	status.text="Опыт · +"+str(int(active.level))+" / −1 за ошибку" if is_experiment else "Карта на "+str(int(active.level))+(" балл" if int(active.level)==1 else " балла")
+	question_label.text=(str(active.title)+"\n\n" if is_experiment else "")+str(active.prompt)
 	_clear_answers()
 	if active.type=="match":
 		selected_pairs.resize(active.pairs.size())
@@ -630,53 +680,57 @@ func _input(event: InputEvent) -> void:
 
 func _front_texture(q: Dictionary) -> ViewportTexture:
 	front_viewport=SubViewport.new()
-	front_viewport.size=Vector2i(640,896)
+	front_viewport.size=Vector2i(1280,1792)
 	front_viewport.disable_3d=true
 	front_viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 	add_child(front_viewport)
+	var face_root:=Control.new()
+	face_root.scale=Vector2.ONE*2.0
+	front_viewport.add_child(face_root)
+	var experiment: bool=str(q.get("kind",""))=="experiment"
 	var background:=ColorRect.new()
 	background.color=Color("fff7e8")
 	background.size=Vector2(640,896)
-	front_viewport.add_child(background)
+	face_root.add_child(background)
 	var border:=Panel.new()
 	border.position=Vector2(18,18)
 	border.size=Vector2(604,860)
-	border.add_theme_stylebox_override("panel",_style(Color("fffaf0"),Color("cbb390")))
-	front_viewport.add_child(border)
+	border.add_theme_stylebox_override("panel",_style(Color("fffaf0"),Color("b78bc3") if experiment else Color("cbb390")))
+	face_root.add_child(border)
 	var title:=Label.new()
-	title.text=str(TOPICS.get(q.topic,"ФИЗИКА"))
+	title.text=("ОПЫТ · " if experiment else "")+str(TOPICS.get(q.topic,"ФИЗИКА"))
 	title.position=Vector2(44,49)
-	title.add_theme_font_size_override("font_size",28)
+	title.add_theme_font_size_override("font_size",23 if experiment else 28)
 	title.modulate=Color("86699b")
-	front_viewport.add_child(title)
+	face_root.add_child(title)
 	var cost:=Label.new()
 	cost.text=str(int(q.level))+" ★"
 	cost.position=Vector2(490,38)
 	cost.add_theme_font_size_override("font_size",53)
 	cost.modulate=Color("ac78ba")
-	front_viewport.add_child(cost)
+	face_root.add_child(cost)
 	var text:=Label.new()
 	text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	text.add_theme_font_size_override("font_size",32 if str(q.prompt).length()>160 else 38)
+	text.add_theme_font_size_override("font_size",30 if str(q.prompt).length()>160 else 35)
 	text.modulate=Color("5d4872")
 	text.text=str(q.prompt)
-	front_viewport.add_child(text)
+	face_root.add_child(text)
 	text.position=Vector2(46,150)
 	text.size=Vector2(548,445)
 	var face:=TextureRect.new()
 	face.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 	face.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	face.texture=load("res://assets/happy.png")
-	front_viewport.add_child(face)
+	face_root.add_child(face)
 	face.position=Vector2(245,624)
 	face.size=Vector2(150,170)
 	var footer:=Label.new()
-	footer.text="ФИЗОГЭЗИК · ОТКРОЙ ЗАКОН"
+	footer.text="НАБЛЮДАЙ · ВЫБИРАЙ ОТВЕТ" if experiment else "ФИЗОГЭЗИК · ОТКРОЙ ЗАКОН"
 	footer.position=Vector2(88,823)
 	footer.add_theme_font_size_override("font_size",22)
 	footer.modulate=Color("a391b1")
-	front_viewport.add_child(footer)
-	for child in front_viewport.get_children():
+	face_root.add_child(footer)
+	for child in face_root.get_children():
 		if child is Control:child.theme=game_theme
 	return front_viewport.get_texture()
 
@@ -691,24 +745,33 @@ func _resolve(correct: bool) -> void:
 	phase="resolving"
 	_clear_answers()
 	var previous: int=int(players[turn].score)
-	if correct:
-		players[turn].score=mini(GOAL,previous+int(active.level))
-		players[turn].streak=int(players[turn].streak)+1
+	var delta: int=int(active.level) if correct else -int(active.get("penalty",0))
+	players[turn].score=clampi(previous+delta,0,GOAL)
+	if correct:players[turn].streak=int(players[turn].streak)+1
 	else:players[turn].streak=0
-	status.text="Верно! +"+str(int(active.level))+(" клетка" if int(active.level)==1 else " клетки") if correct else "Разберёмся и попробуем ещё"
+	if correct:
+		status.text="Верно! +"+str(delta)+(" клетка" if delta==1 else " клетки")
+	elif delta<0 and int(players[turn].score)<previous:
+		status.text="Разберём опыт: −1 клетка"
+	elif delta<0:
+		status.text="Разберём опыт: старт не даёт уйти ниже нуля"
+	else:
+		status.text="Разберёмся и попробуем ещё"
 	status.modulate=Color("a8ebc9") if correct else Color("ffcb9f")
 	panel.add_theme_stylebox_override("panel",_style(Color("1c2c31") if correct else Color("342938"),Color("70b69b") if correct else Color("bb936d")))
 	question_label.text=str(active.explanation)
-	journal.record("Answer "+("correct" if correct else "incorrect")+"; player "+str(turn+1)+"; score "+str(players[turn].score))
-	if not smoke:fx.answer_feedback(correct,_pawn_at(turn,previous),int(active.level) if correct else 0,int(players[turn].streak))
+	journal.record("Answer "+("correct" if correct else "incorrect")+"; player "+str(turn+1)+"; delta "+str(delta)+"; score "+str(players[turn].score))
+	if not smoke:fx.answer_feedback(correct,_pawn_at(turn,previous),delta,int(players[turn].streak))
 	if smoke or not fx.enabled:
 		pawns[turn].position=_pawn_at(turn,int(players[turn].score))
 		phase="feedback"
-	elif correct:
+	elif delta!=0 and int(players[turn].score)!=previous:
 		var pawn: Node3D=pawns[turn]
-		var color: Color=COLORS[turn]
+		var color: Color=COLORS[turn] if correct else Color("ffbd8c")
+		var direction: int=1 if delta>0 else -1
 		movement_tween=create_tween()
-		for cell in range(previous+1,int(players[turn].score)+1):
+		var cell: int=previous+direction
+		while cell!=int(players[turn].score)+direction:
 			var target: Vector3=_pawn_at(turn,cell)
 			movement_tween.tween_property(pawn,"scale",Vector3(1.15,.8,1.15),.07)
 			movement_tween.tween_property(pawn,"position",target+Vector3(0,.65,0),.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -720,6 +783,7 @@ func _resolve(correct: bool) -> void:
 				fx.burst(target+Vector3(0,.2,0),color,6,.55)
 				fx.tone("step"))
 			movement_tween.tween_property(pawn,"scale",Vector3.ONE,.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			cell+=direction
 		movement_tween.tween_callback(_finish_resolution)
 	else:
 		movement_tween=create_tween()
@@ -837,6 +901,64 @@ func _smoke_test() -> void:
 	print("GODOT_SMOKE_PASS: 45 cards loaded, 3D board, deck selection, turns, exact 1–3 movement; party finished in ",turns_played," turns.")
 	get_tree().quit(0)
 
+func _lab_test() -> void:
+	assert(experiments.size()==50,"All 50 experiments must be available")
+	var ids: Dictionary={}
+	var animations: Dictionary={}
+	for card: Dictionary in experiments:
+		assert(not ids.has(card.id),"Experiment IDs must be unique")
+		assert(not animations.has(card.anim),"Each experiment needs its own scene type")
+		ids[card.id]=true
+		animations[card.anim]=true
+		lab_stage.show_experiment(card)
+		assert(lab_stage.visible and lab_stage.specimen.get_child_count()>0,"3D scene must not be empty: "+str(card.id))
+		assert(lab_stage.animated_part_count()>0,"Scene needs animated parts: "+str(card.id))
+		assert(int(card.correct)==0 and card.options.size()==4,"Choice data must be complete")
+		var moving_nodes: Array[Node3D]=[]
+		for value: Variant in lab_stage.parts.values():moving_nodes.append(value as Node3D)
+		for particle: Dictionary in lab_stage.particles:moving_nodes.append(particle.node as Node3D)
+		var before_motion: Array[Transform3D]=[]
+		for node: Node3D in moving_nodes:before_motion.append(node.transform)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var moved: bool=false
+		for i: int in range(moving_nodes.size()):
+			if not before_motion[i].is_equal_approx(moving_nodes[i].transform):moved=true
+		assert(moved,"Scene must really animate: "+str(card.id))
+	lab_enabled=true
+	_new_game(2)
+	assert(deck.size()==95,"Laboratory must combine both banks")
+	deck[0]=experiments[0].duplicate(true)
+	_open_card(0)
+	assert(answer_box.get_child_count()==5,"Four shuffled choices and a pass button")
+	for child: Node in answer_box.get_children():
+		if child is Button:
+			assert(not child.text.begins_with("✓"),"Correct answer must not be revealed")
+	_resolve(false)
+	assert(int(players[turn].score)==0,"Experiment score cannot fall below zero")
+	_next_turn()
+	players[turn].score=5
+	pawns[turn].position=_pawn_at(turn,5)
+	deck[0]=experiments[1].duplicate(true)
+	_open_card(0)
+	_resolve(true)
+	assert(int(players[turn].score)==5+int(active.level),"Correct experiment awards its level")
+	_next_turn()
+	players[turn].score=3
+	pawns[turn].position=_pawn_at(turn,3)
+	deck[0]=experiments[2].duplicate(true)
+	_open_card(0)
+	_resolve(false)
+	assert(int(players[turn].score)==2,"Incorrect experiment deducts exactly one")
+	_next_turn()
+	var ordinary_before: int=int(players[turn].score)
+	deck[0]=questions[0].duplicate(true)
+	_open_card(0)
+	_resolve(false)
+	assert(int(players[turn].score)==ordinary_before,"Original cards never deduct points")
+	print("GODOT_LAB_PASS: 50 unique animated 3D scenes, 95-card deck, hidden choices, +level, −1 and zero floor.")
+	get_tree().quit(0)
+
 func _wait_phase(expected: String, seconds: float = 8.0) -> bool:
 	var deadline: int=Time.get_ticks_msec()+int(seconds*1000)
 	while phase!=expected and Time.get_ticks_msec()<deadline:
@@ -884,30 +1006,82 @@ func _effects_test() -> void:
 	assert(phase=="answer","Reduced effects must retain the playable card")
 	_resolve(true)
 	assert(phase=="feedback")
-	print("GODOT_EFFECTS_PASS: deal, flip, input gates, incorrect reaction, exact jumps, victory, restart and reduced effects.")
+	_toggle_effects()
+	lab_enabled=true
+	_new_game(2)
+	assert(await _wait_phase("draw"))
+	players[turn].score=3
+	pawns[turn].position=_pawn_at(turn,3)
+	deck[0]=experiments[0].duplicate(true)
+	_open_card(0)
+	assert(await _wait_phase("answer"))
+	_resolve(false)
+	assert(phase=="resolving" and int(players[turn].score)==2)
+	assert(await _wait_phase("feedback"),"Penalty step must finish")
+	assert(pawns[turn].position.distance_to(_pawn_at(turn,2))<.01,"Penalty must move the pawn back")
+	print("GODOT_EFFECTS_PASS: deal, flip, input gates, exact jumps, victory, reduced effects and animated −1 penalty.")
 	get_tree().quit(0)
 
 func _capture() -> void:
 	await _wait_phase("draw")
 	var args:=OS.get_cmdline_user_args()
-	if args.has("--capture-card") or args.has("--capture-correct") or args.has("--capture-wrong") or args.has("--capture-victory"):
-		_open_card(1)
+	if args.has("--capture-lab") or args.has("--capture-lab-wrong"):
+		lab_enabled=true
+		lab_button.text="Лаборатория: вкл"
+		_new_game(2)
+		await _wait_phase("draw")
+		var wanted: String=OS.get_environment("FIZ_LAB_ANIM")
+		if wanted.is_empty():wanted="prism"
+		var chosen: Dictionary={}
+		for card: Dictionary in experiments:
+			if str(card.anim)==wanted:chosen=card.duplicate(true)
+		assert(not chosen.is_empty(),"Unknown capture experiment")
+		deck[0]=chosen
+		_open_card(0)
 		await _wait_phase("answer")
-	if args.has("--capture-correct") or args.has("--capture-wrong") or args.has("--capture-victory"):
-		if args.has("--capture-victory"):
-			players[turn].score=14
-			pawns[turn].position=_pawn_at(turn,14)
-		_resolve(not args.has("--capture-wrong"))
-		if args.has("--capture-victory"):
+		if args.has("--capture-lab-wrong"):
+			players[turn].score=5
+			pawns[turn].position=_pawn_at(turn,5)
+			_resolve(false)
 			await _wait_phase("feedback")
-			_next_turn()
-			await get_tree().create_timer(.35).timeout
-		else:
 			await get_tree().create_timer(.25).timeout
-	else:await get_tree().create_timer(.4).timeout
+		else:await get_tree().create_timer(1.2).timeout
+	else:
+		if args.has("--capture-card") or args.has("--capture-correct") or args.has("--capture-wrong") or args.has("--capture-victory"):
+			_open_card(1)
+			await _wait_phase("answer")
+		if args.has("--capture-correct") or args.has("--capture-wrong") or args.has("--capture-victory"):
+			if args.has("--capture-victory"):
+				players[turn].score=14
+				pawns[turn].position=_pawn_at(turn,14)
+			_resolve(not args.has("--capture-wrong"))
+			if args.has("--capture-victory"):
+				await _wait_phase("feedback")
+				_next_turn()
+				await get_tree().create_timer(.35).timeout
+			else:
+				await get_tree().create_timer(.25).timeout
+		else:await get_tree().create_timer(.4).timeout
 	var path: String=OS.get_environment("FIZ_CAPTURE")
 	if not path.is_empty():
-		var image:=get_viewport().get_texture().get_image()
-		image.save_png(path)
-		print("GODOT_CAPTURE: ",path)
+		# Физический экран может быть меньше 4K. Отдельный буфер сохраняет
+		# тот же мир и интерфейс в честные 3840×2160 без масштабирования PNG.
+		var capture_viewport:=SubViewport.new()
+		capture_viewport.size=Vector2i(3840,2160)
+		capture_viewport.size_2d_override=Vector2i(1280,720)
+		capture_viewport.size_2d_override_stretch=true
+		capture_viewport.world_3d=get_viewport().world_3d
+		capture_viewport.msaa_3d=Viewport.MSAA_4X
+		capture_viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
+		add_child(capture_viewport)
+		for child: Node in get_children():
+			if child!=capture_viewport and child!=front_viewport:
+				child.reparent(capture_viewport,true)
+		camera.make_current()
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var image:=capture_viewport.get_texture().get_image()
+		assert(image.get_size()==Vector2i(3840,2160),"Capture must be real 4K")
+		assert(image.save_png(path)==OK,"Screenshot must be written")
+		print("GODOT_CAPTURE: ",path," · ",image.get_width(),"×",image.get_height())
 	get_tree().quit(0)

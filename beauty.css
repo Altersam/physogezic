@@ -1,0 +1,200 @@
+/* Beauty pack: deeper space, glowing cells, shiny cards, celebration. Loaded last. */
+
+/* --- The board becomes a night sky --- */
+.real-game-board{
+  background:
+    radial-gradient(ellipse at 50% 118%,#7c5cb345 0,transparent 52%),
+    radial-gradient(ellipse at 12% -8%,#5d4a8c3d 0,transparent 48%),
+    radial-gradient(ellipse at 88% 6%,#3f5a8f30 0,transparent 48%),
+    radial-gradient(ellipse at 45% 50%,#54416b 0,#28223e 65%,#1b1730 100%);
+  box-shadow:
+    inset 0 0 0 2px #b995e030,
+    inset 0 -34px 70px #120d26b3,
+    inset 0 18px 45px #0f0b2159,
+    0 10px 0 #34284618,
+    0 26px 70px #24164340;
+}
+.real-game-board:before{
+  background-image:
+    radial-gradient(#e9d9ff 1px,transparent 1.4px),
+    radial-gradient(#d1b8e8 1px,transparent 1.4px),
+    radial-gradient(#f3e2b3 1.2px,transparent 1.7px),
+    radial-gradient(#ffffff99 1.6px,transparent 2.1px);
+  background-size:99px 87px,151px 131px,113px 109px,211px 173px;
+  background-position:18px 13px,61px 37px,40px 71px,97px 23px;
+  opacity:.85;
+  animation:beauty-twinkle 6.5s ease-in-out infinite;
+}
+.real-game-board:after{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background-image:
+    radial-gradient(#cfe0ff 1px,transparent 1.5px),
+    radial-gradient(#ffe9c4 1.3px,transparent 1.8px);
+  background-size:173px 149px,127px 167px;
+  background-position:83px 47px,29px 91px;
+  opacity:.4;
+  animation:beauty-twinkle 9s ease-in-out -3s infinite reverse;
+}
+@keyframes beauty-twinkle{0%,100%{opacity:.85}50%{opacity:.35}}
+
+/* The orbit path slowly breathes and its dashes drift along. */
+.board-orbit ellipse[stroke]{animation:beauty-orbit-march 26s linear infinite}
+@keyframes beauty-orbit-march{to{stroke-dashoffset:-260}}
+
+/* Cells get depth and light; the finish star calls the players. */
+.table-cell>circle{filter:drop-shadow(0 3px 6px #12091f8c)}
+.table-cell text{paint-order:stroke;stroke:#241a3ab3;stroke-width:3px}
+.table-cell.occupied>circle:first-child{fill:#8563b3;stroke:#e3c6ff;filter:drop-shadow(0 0 12px #b78ee880)}
+.table-cell.finish-cell>circle{
+  fill:#c9a86a;stroke:#f6e2b0;stroke-width:3.5;
+  filter:drop-shadow(0 0 8px #f0cd7f99);
+  animation:beauty-finish-pulse 2.8s ease-in-out infinite;
+}
+@keyframes beauty-finish-pulse{50%{filter:drop-shadow(0 0 20px #f0cd7fd9)}}
+.table-cell.finish-cell text{fill:#fffbe8;text-shadow:0 0 9px #f5d78a}
+.table-cell.help-cell>.cell-halo{animation:beauty-halo-breathe 3.2s ease-in-out infinite}
+@keyframes beauty-halo-breathe{50%{opacity:.15}}
+
+/* The active player's piece floats and glows. */
+.table-piece{filter:drop-shadow(0 5px 8px #0c0618b3)}
+.table-piece.active-piece{
+  outline-color:#ffe49c;
+  filter:drop-shadow(0 5px 8px #0c0618b3) drop-shadow(0 0 9px #ffdd9380);
+  animation:beauty-piece-bob 2.2s ease-in-out infinite;
+}
+@keyframes beauty-piece-bob{50%{translate:0 -4px}}
+
+/* Face-down cards: gloss, deeper shadow, light sweeps over on hover. */
+.face-down-card{
+  box-shadow:0 10px 18px #0d082b66,inset 0 0 0 1px #ffffff1f;
+  transition:transform .22s cubic-bezier(.3,.9,.4,1.2),filter .22s,border-color .22s,box-shadow .22s;
+}
+.face-down-card::after{
+  content:"";position:absolute;inset:0;border-radius:7px;pointer-events:none;
+  background:linear-gradient(115deg,transparent 32%,#ffffff2e 45%,#ffffff70 50%,#ffffff2e 55%,transparent 68%);
+  background-size:280% 280%;background-position:130% 0;
+  transition:background-position .7s ease;
+}
+.face-down-card:hover:not(:disabled){
+  box-shadow:0 18px 30px #0d082b80,0 0 22px #ffdd9340,inset 0 0 0 1px #ffe9bd55;
+  filter:brightness(1.14);
+}
+.face-down-card:hover:not(:disabled)::after{background-position:-60% 0}
+
+/* The opened paper card feels like real paper under a lamp. */
+.paper-card{
+  background:linear-gradient(158deg,#fffdf7 0%,#fdf4e2 70%,#f9ecd4 100%);
+  box-shadow:0 16px 30px #0e071869,inset 0 0 0 2px #fffdf8,0 0 46px #ffdf9e26;
+}
+.paper-card.answer-side{background:linear-gradient(158deg,#f8fdf0 0%,#eef6e0 70%,#e6f0d3 100%)}
+
+/* Buttons carry a gradient of their own theme colour and a soft light. */
+.primary,.game-button:not(.muted):not(.amber):not(:disabled){
+  background:linear-gradient(162deg,color-mix(in srgb,var(--world,#7456c3) 86%,#fff) 0%,var(--world,#7456c3) 55%,color-mix(in srgb,var(--world,#7456c3) 80%,#241038) 100%);
+  box-shadow:0 6px 18px color-mix(in srgb,var(--world,#7456c3) 34%,transparent),inset 0 1px 0 #ffffff38;
+  position:relative;overflow:hidden;
+}
+.primary:hover:not(:disabled),.game-button:not(.muted):not(.amber):hover:not(:disabled){filter:brightness(1.07)}
+.primary::after,.game-button::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,transparent 35%,#ffffff29 50%,transparent 65%);
+  background-size:280% 280%;background-position:130% 0;
+  transition:background-position .8s ease;
+}
+.primary:hover::after,.game-button:hover::after{background-position:-70% 0}
+.game-layout:has(.real-game-board) .question-actions .primary,
+.game-layout:has(.real-game-board) .draw-content .primary{box-shadow:0 6px 18px #7456c34d,inset 0 1px 0 #ffffff38,0 -4px 0 #4d3085 inset}
+
+/* Gentle life on the home hero. */
+.spark{animation:beauty-spark-twinkle 3.4s ease-in-out infinite}
+.spark.two{animation-delay:1.1s}
+.spark.three{animation-delay:2.2s}
+@keyframes beauty-spark-twinkle{50%{opacity:.35;scale:.8}}
+.mini-cell{animation:beauty-cell-float 5.5s ease-in-out infinite}
+.mini-cell:nth-child(2n){animation-delay:1.3s}
+.mini-cell:nth-child(3n){animation-delay:2.6s}
+@keyframes beauty-cell-float{50%{translate:0 -7px}}
+.hero-mascot{animation:beauty-mascot-sway 7s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes beauty-mascot-sway{50%{transform:rotate(3.4deg) translateY(-5px)}}
+
+/* Cards and panels respond to touch. */
+.library-card,.formula-card,.stat-card,.learning-item,.topic-overview a,.player-card{
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.library-card:hover,.formula-card:hover,.learning-item:hover,.topic-overview a:hover{
+  transform:translateY(-3px);
+  box-shadow:0 12px 28px #33204b14;
+  border-color:#cbb4e4;
+}
+.player-card.current{box-shadow:0 0 0 1px var(--player-color),0 6px 18px #33204b12}
+
+/* Options give a hint of colour before the answer is checked. */
+.option:hover:not(:disabled),.table-answer-option:hover:not(:disabled){transform:translateX(3px)}
+.option,.table-answer-option{transition:transform .16s ease,border-color .16s ease,background .16s ease}
+
+/* Victory: the mascot celebrates and the ranking steps in. */
+.results-head img{animation:beauty-victory-bounce 1s cubic-bezier(.3,1.4,.5,1) both}
+@keyframes beauty-victory-bounce{0%{transform:scale(.4) rotate(-8deg);opacity:0}70%{transform:scale(1.08) rotate(2deg)}100%{transform:scale(1) rotate(0)}}
+.results-head h1{animation:beauty-rise .5s ease-out .12s both}
+.results-head p{animation:beauty-rise .5s ease-out .22s both}
+.results-rank{animation:beauty-rise .5s ease-out .32s both}
+.results-actions{animation:beauty-rise .5s ease-out .42s both}
+@keyframes beauty-rise{from{opacity:0;translate:0 14px}to{opacity:1;translate:0 0}}
+.table-cup{box-shadow:0 0 26px #f0cd7f66,0 6px 0 #b3914752;animation:beauty-cup-glow 2.4s ease-in-out infinite}
+@keyframes beauty-cup-glow{50%{box-shadow:0 0 44px #f0cd7fa6,0 6px 0 #b3914752}}
+
+/* Confetti pieces are positioned and timed inline by beauty.js. */
+.confetti-layer{position:fixed;inset:0;pointer-events:none;z-index:80;overflow:hidden}
+.confetti-piece{
+  position:absolute;top:-16px;border-radius:2px;
+  animation:beauty-confetti-fall var(--dur,2.8s) cubic-bezier(.2,.5,.5,1) var(--delay,0s) forwards;
+}
+@keyframes beauty-confetti-fall{
+  0%{transform:translate(0,0) rotate(0deg);opacity:1}
+  85%{opacity:1}
+  100%{transform:translate(var(--dx,0px),108vh) rotate(var(--rot,540deg));opacity:0}
+}
+
+/* --- Game feel: отклик на ответ (по скиллу game-feel-and-juice) --- */
+
+/* Ошибка: поле коротко вздрагивает (малый «trauma»-толчок, амплитуда ≤4px). */
+.real-game-board.juice-shake{animation:beauty-board-shake .32s ease-out}
+@keyframes beauty-board-shake{
+  0%,100%{translate:0 0}
+  18%{translate:-4px 1px}
+  38%{translate:3px -1px}
+  58%{translate:-2px 1px}
+  78%{translate:1px 0}
+}
+
+/* Верный ответ: фишка вспыхивает золотом. */
+.table-piece.juice-pop{animation:beauty-piece-pop .6s ease-out}
+@keyframes beauty-piece-pop{
+  0%{filter:drop-shadow(0 5px 8px #0c0618b3)}
+  30%{filter:drop-shadow(0 5px 8px #0c0618b3) drop-shadow(0 0 20px #ffe49c)}
+  100%{filter:drop-shadow(0 5px 8px #0c0618b3)}
+}
+
+/* Кнопки «продавливаются» под пальцем: ввод подтверждён <100мс. */
+.primary:active:not(:disabled),
+.secondary:active:not(:disabled),
+.game-button:active:not(:disabled),
+.text-button:active:not(:disabled),
+.chip:active:not(:disabled),
+.option:active:not(:disabled),
+.count-button:active:not(:disabled),
+.face-down-card:active:not(:disabled){animation:beauty-press .18s ease-out}
+@keyframes beauty-press{35%{scale:.94 .92}}
+
+/* --- Читаемость (по скиллу art-direction-and-readability) --- */
+/* Подписи закрытых миссий: заблокировано ≠ нечитаемо. Контраст 1.9→3.9:1. */
+.locked .node-label>strong{color:#82718f}
+/* Подписи-подзаголовки миссий: 2.5→4.2:1. */
+.node-label>span{color:#87739a}
+/* Сундук острова: название читается и в ожидании, и в готовности. */
+.treasure-chest{color:#9a81ae}
+.treasure-chest.ready{color:#a8802b}
+/* Клавиатурная подсказка и сложность карточки — не декорация, а информация. */
+.key-note{color:#857a90}
+.difficulty{color:#8a719f}
+.save-note{color:#8f7d9e}

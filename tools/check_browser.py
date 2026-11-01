@@ -109,13 +109,13 @@ try:
 
         # Reference and progress sections, search, navigation, keyboard, dialogs.
         page.goto(BASE+'#library')
-        expect(page.locator('.library-card')).to_have_count(45)
+        expect(page.locator('.library-card')).to_have_count(95)
         page.locator('#library-search').fill('нейтрон')
-        assert 0<page.locator('.library-card').count()<45
+        assert 0<page.locator('.library-card').count()<95
         page.locator('#library-search').fill('несуществующий запрос 999')
         assert page.locator('.empty-state').is_visible()
         page.locator('[data-action="clear-search"]').click()
-        assert page.locator('.library-card').count()==45
+        assert page.locator('.library-card').count()==95
         page.goto(BASE+'#formulas')
         expect(page.locator('.formula-card')).to_have_count(20)
         page.goto(BASE+'#progress')

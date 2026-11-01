@@ -1,17 +1,18 @@
-; Small, separate 3D table prototype. Main playable version is the web game.
+; Настольная игра и 50 объёмных лабораторных установок.
 config_version=5
 
 [application]
-config/name="Физогэзик — 3D стол"
+config/name="Физогэзик — 4K лаборатория"
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://assets/happy.png"
 
 [display]
 window/size/viewport_width=1280
-window/size/viewport_height=800
-window/size/window_width_override=1280
-window/size/window_height_override=800
+window/size/viewport_height=720
+window/size/window_width_override=3840
+window/size/window_height_override=2160
+window/size/resizable=true
 window/stretch/mode="canvas_items"
 
 [debug]
@@ -20,5 +21,8 @@ file_logging/enable_file_logging=false
 [rendering]
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+anti_aliasing/quality/msaa_3d=2
+scaling_3d/scale=1.0
 textures/default_filters/use_nearest_mipmap_filter=false
+textures/default_filters/anisotropic_filtering_level=4
 environment/defaults/default_clear_color=Color(0.085,0.07,0.12,1)

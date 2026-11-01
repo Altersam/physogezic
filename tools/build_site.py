@@ -8,9 +8,9 @@ parser.add_argument('--web-only',action='store_true',help='Validate only the lig
 args=parser.parse_args()
 OUT=ROOT/'dist'/'site'
 OUT.mkdir(parents=True,exist_ok=True)
-files=['index.html','play.html','launcher.css','launcher.js','styles.css','adventure.css','math.css','rooms.css','motion.css','table.css',
-       'math.js','journal.js','questions.js','engine.js','campaign.js','adventure-ui.js',
-       'table-view.js','room-ui.js','app.js']
+files=['index.html','play.html','launcher.css','launcher.js','styles.css','adventure.css','math.css','rooms.css','motion.css','table.css','beauty.css','lab.css',
+       'math.js','journal.js','questions.js','experiments.js','lab.js','engine.js','campaign.js','adventure-ui.js',
+       'table-view.js','room-ui.js','app.js','beauty.js']
 for name in files:
     if name in ('index.html','play.html'):
         content=(ROOT/name).read_text(encoding='utf-8').replace('<html lang="ru">','<html lang="ru" data-hosting="static">')

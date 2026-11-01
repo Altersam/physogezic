@@ -33,9 +33,10 @@
     if(game.finished || game.phase!=='answer' || !game.active) return null;
     const q=questions.find(q=>q.id===game.active.id);
     const correct=manual ? answer===true : isCorrect(q,answer);
+    const penalty=correct?0:Math.max(0,Math.min(3,Number(q.penalty)||0));
     const p=game.players[game.turn];
-    p.answered++; if(correct){p.correct++;p.score+=q.level;}
-    const result={id:q.id,player:game.turn,correct,points:correct?q.level:0,answer,manual,at:Date.now()};
+    p.answered++; if(correct){p.correct++;p.score+=q.level;}else if(penalty){p.score=Math.max(0,p.score-penalty);}
+    const result={id:q.id,player:game.turn,correct,points:correct?q.level:(penalty?-penalty:0),answer,manual,at:Date.now()};
     game.history.push(result);game.active.answer=answer;game.active.result=result;game.phase='feedback';
     return result;
   }
@@ -58,9 +59,9 @@
     if(game.history.length!==expectedHistory)return false;
     const totals=game.players.map(()=>({score:0,answered:0,correct:0}));
     for(let i=0;i<game.history.length;i++){
-      const h=game.history[i],q=byId.get(game.deck[i]);
-      if(!h || h.id!==q.id || h.player!==i%game.players.length || typeof h.correct!=='boolean' || h.points!==(h.correct?q.level:0))return false;
-      const total=totals[h.player];total.answered++;if(h.correct){total.score+=q.level;total.correct++;}
+      const h=game.history[i],q=byId.get(game.deck[i]),penalty=Math.max(0,Math.min(3,Number(q.penalty)||0));
+      if(!h || h.id!==q.id || h.player!==i%game.players.length || typeof h.correct!=='boolean' || h.points!==(h.correct?q.level:(penalty?-penalty:0)))return false;
+      const total=totals[h.player];total.answered++;if(h.correct){total.score+=q.level;total.correct++;}else if(penalty){total.score=Math.max(0,total.score-penalty);}
     }
     if(!game.players.every((p,i)=>['score','correct','answered'].every(k=>p[k]===totals[i][k])))return false;
     if(['answer','feedback'].includes(game.phase)){
