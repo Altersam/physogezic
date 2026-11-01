@@ -110,7 +110,13 @@ def main():
         presets=project/'export_presets.cfg'
         config=presets.read_text(encoding='utf-8').replace('custom_template/release=""','custom_template/release='+json.dumps(template.as_posix()))
         presets.write_text(config,encoding='utf-8')
-        run(godot,project,['--editor','--import'])
+        for attempt in range(3):
+            try:
+                run(godot,project,['--editor','--import'])
+                break
+            except RuntimeError as error:
+                if attempt==2 or 'exit code -11' not in str(error):raise
+                print('Godot importer segfaulted; retrying with the recovered import cache...',flush=True)
         run(godot,project,['--export-release','Web',str(out/'index.html')])
     for name in ('index.html','index.js','index.wasm','index.pck'):
         if not (out/name).is_file():raise RuntimeError('Missing export: '+name)
