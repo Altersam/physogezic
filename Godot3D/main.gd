@@ -7,9 +7,9 @@ const Journal=preload("res://journal.gd")
 const LabStage=preload("res://lab_stage.gd")
 const GameFont=preload("res://game_font.tres")
 const TOPICS: Dictionary={"mechanics":"Механика","heat":"Тепловые явления","electricity":"Электричество","optics":"Оптика","quantum":"Квантовые явления"}
+const JOURNEY_STAGES: Array[String]=["Механическая долина","Тепловые острова","Электрический город","Сад света","Квантовый рубеж"]
 var questions: Array = []
 var experiments: Array = []
-var lab_enabled: bool = false
 var deck: Array = []
 var players: Array = []
 var pawns: Array[Node3D] = []
@@ -74,6 +74,7 @@ func _ready() -> void:
 	add_child(fx)
 	_build_world()
 	lab_stage=LabStage.new()
+	lab_stage.game_font=GameFont
 	lab_stage.position=Vector3(-0.1,.36,-2.3)
 	lab_stage.scale=Vector3.ONE*.78
 	add_child(lab_stage)
@@ -309,7 +310,7 @@ func _build_ui() -> void:
 	add_child(hud)
 	var layer: CanvasLayer=hud
 	var header := Label.new()
-	header.text = "ФИЗОГЭЗИК · звёздный стол"
+	header.text = "ФИЗОГЭЗИК · путешествие"
 	header.position = Vector2(28,20)
 	header.add_theme_font_size_override("font_size",24)
 	header.modulate = Color("e3d2f4")
@@ -368,9 +369,10 @@ func _build_ui() -> void:
 	layer.add_child(options)
 	for n in range(1,5):
 		options.add_child(_button(str(n)+" игр.",_new_game.bind(n)))
-	lab_button=_button("Лаборатория: выкл",_toggle_lab)
+	lab_button=_button("Путешествие · 95 карт",_show_journey)
 	lab_button.position=Vector2(420,25)
 	lab_button.custom_minimum_size=Vector2(190,36)
+	lab_button.tooltip_text="45 вопросов и 50 опытов перемешаны в одной колоде"
 	lab_button.add_theme_font_size_override("font_size",12)
 	layer.add_child(lab_button)
 	sound_button=_button("Звук: вкл",_toggle_sound)
@@ -402,11 +404,8 @@ func _toggle_effects() -> void:
 	lab_stage.set_animated(fx.enabled)
 	effect_button.text="Эффекты: вкл" if fx.enabled else "Эффекты: выкл"
 
-func _toggle_lab() -> void:
-	lab_enabled=not lab_enabled
-	lab_button.text="Лаборатория: вкл" if lab_enabled else "Лаборатория: выкл"
-	_new_game(players.size())
-	if not smoke:fx.toast("95 КАРТ · 50 ОБЪЁМНЫХ ОПЫТОВ" if lab_enabled else "ИСХОДНАЯ КОЛОДА · 45 КАРТ",Color("ffe0a0"))
+func _show_journey() -> void:
+	if not smoke:fx.toast("5 ЭТАПОВ · 45 ВОПРОСОВ + 50 ОПЫТОВ",Color("ffe0a0"))
 
 func _pawn_at(index: int, cell: int) -> Vector3:
 	return _cell(cell)+Vector3((index-(players.size()-1)/2.0)*.45,.14,0)
@@ -520,15 +519,15 @@ func _new_game(count: int) -> void:
 		pawn.position=_cell(0)+Vector3((i-(count-1)/2.0)*.45,.14,0)
 		pawns.append(pawn)
 	deck=questions.duplicate(true)
-	if lab_enabled:deck.append_array(experiments.duplicate(true))
+	deck.append_array(experiments.duplicate(true))
 	deck.shuffle()
 	turn=0
 	phase="draw"
 	hover_slot=-1
 	_reset_cards()
 	_refresh()
-	journal.record("New party: "+str(count)+" players")
-	if not smoke:fx.toast("ЗНАНИЯ ПРИВОДЯТ В ДВИЖЕНИЕ",Color("ddd0ff"))
+	journal.record("New journey: "+str(count)+" players; 45 questions + 50 experiments")
+	if not smoke:fx.toast("ПУТЕШЕСТВИЕ НАЧИНАЕТСЯ · 95 КАРТ",Color("ddd0ff"))
 
 func _reset_cards() -> void:
 	front_caption.visible=false
@@ -556,16 +555,18 @@ func _reset_cards() -> void:
 	if phase=="dealing":card_tween.chain().tween_callback(func()->void:phase="draw";_refresh())
 
 func _refresh() -> void:
-	player_label.text="В колоде "+str(deck.size())+" карт · Каждый верный ответ двигает фишку на 1–3 клетки"
+	var journey_stage: int=clampi(int(players[turn].score)/3,0,4)
+	player_label.text="Путешествие · "+str(deck.size())+" карт в колоде · вопросы и опыты перемешаны"
 	player_label.add_theme_font_size_override("font_size",12)
 	_update_badges()
 	progress.value=float(players[turn].score)
-	response_badge.text="Серия: "+str(players[turn].streak)+" подряд" if int(players[turn].streak)>0 else "Твоя следующая маленькая победа"
+	response_badge.text="Этап "+str(journey_stage+1)+"/5 · "+JOURNEY_STAGES[journey_stage]
+	if int(players[turn].streak)>0:response_badge.text+=" · Серия: "+str(players[turn].streak)
 	next_button.visible=phase=="feedback" or phase=="finished"
-	next_button.text="Сыграть ещё" if phase=="finished" else "Забрать победу!" if int(players[turn].score)>=GOAL else "Передать ход →"
+	next_button.text="Новое путешествие" if phase=="finished" else "Завершить маршрут!" if int(players[turn].score)>=GOAL else "Продолжить путь →"
 	if phase in ["draw","dealing"]:
-		status.text="Ходит "+str(players[turn].name)
-		question_label.text="Выбери закрытую карту на столе. Вопрос появится после переворота."
+		status.text="Путь игрока "+str(turn+1)
+		question_label.text="Выбери следующий шаг: закрытая карта может оказаться вопросом или объёмным опытом."
 		_clear_answers()
 		for i in range(mini(3,deck.size())):
 			var button:=_button("Открыть карту "+str(i+1),_open_card.bind(i))
@@ -881,24 +882,30 @@ func _unhandled_input(event: InputEvent) -> void:
 		if hit and hit.collider.has_meta("slot"):_open_card(int(hit.collider.get_meta("slot")))
 
 func _smoke_test() -> void:
+	assert(GameFont.base_font.multichannel_signed_distance_field,"Crisp MSDF font import must be preserved")
+	assert(deck.size()==95,"Journey always combines both card banks")
+	var experiment_count: int=0
+	for card: Dictionary in deck:
+		if str(card.get("kind",""))=="experiment":experiment_count+=1
+	assert(experiment_count==50 and deck.size()-experiment_count==45,"Journey mixes 45 questions with 50 labs")
 	for symbol in [0x2605,0x25b6,0x2192]:
 		var bundled: bool=GameFont.base_font.has_char(symbol)
 		for fallback in GameFont.fallbacks:bundled=bundled or fallback.has_char(symbol)
 		assert(bundled,"Browser symbol fallback must be bundled: "+str(symbol))
 	var seen: Dictionary={}
 	var turns_played: int=0
-	while phase!="finished" and turns_played<45:
+	while phase!="finished" and turns_played<95:
 		_open_card(0)
 		assert(not seen.has(active.id),"A card must not repeat")
 		seen[active.id]=true
 		var before: int=int(players[turn].score)
 		var points: int=int(active.level)
 		_resolve(true)
-		assert(int(players[turn].score)==mini(GOAL,before+points),"Original 1–3 steps")
+		assert(int(players[turn].score)==mini(GOAL,before+points),"Exact 1–3 movement")
 		_next_turn()
 		turns_played+=1
-	assert(phase=="finished","A full party must finish")
-	print("GODOT_SMOKE_PASS: 45 cards loaded, 3D board, deck selection, turns, exact 1–3 movement; party finished in ",turns_played," turns.")
+	assert(phase=="finished","A full journey must finish")
+	print("GODOT_SMOKE_PASS: 95 mixed journey cards, 3D route, five stages, turns, exact 1–3 movement; finished in ",turns_played," turns.")
 	get_tree().quit(0)
 
 func _lab_test() -> void:
@@ -925,7 +932,6 @@ func _lab_test() -> void:
 		for i: int in range(moving_nodes.size()):
 			if not before_motion[i].is_equal_approx(moving_nodes[i].transform):moved=true
 		assert(moved,"Scene must really animate: "+str(card.id))
-	lab_enabled=true
 	_new_game(2)
 	assert(deck.size()==95,"Laboratory must combine both banks")
 	deck[0]=experiments[0].duplicate(true)
@@ -967,6 +973,7 @@ func _wait_phase(expected: String, seconds: float = 8.0) -> bool:
 
 func _effects_test() -> void:
 	assert(await _wait_phase("draw"),"Deal animation must finish")
+	deck[1]=questions[0].duplicate(true)
 	_open_card(1)
 	assert(phase=="opening","The printed card must flip before answering")
 	var before: int=int(players[turn].score)
@@ -977,9 +984,10 @@ func _effects_test() -> void:
 	_next_turn()
 	assert(phase=="resolving","Input must not skip feedback animation")
 	assert(await _wait_phase("feedback"),"Mistake reaction must finish")
-	assert(int(players[turn].score)==before,"Wrong answer never moves the token")
+	assert(int(players[turn].score)==before,"Wrong ordinary answer never moves the token")
 	_next_turn()
 	assert(await _wait_phase("draw"))
+	deck[0]=questions[1].duplicate(true)
 	_open_card(0)
 	assert(await _wait_phase("answer"))
 	before=int(players[turn].score)
@@ -992,6 +1000,7 @@ func _effects_test() -> void:
 	assert(await _wait_phase("draw"))
 	players[turn].score=14
 	pawns[turn].position=_pawn_at(turn,14)
+	deck[0]=questions[2].duplicate(true)
 	_open_card(0)
 	assert(await _wait_phase("answer"))
 	_resolve(true)
@@ -1002,12 +1011,12 @@ func _effects_test() -> void:
 	assert(await _wait_phase("draw"),"Restart must cancel old effects")
 	assert(players.size()==4 and pawns.size()==4)
 	_toggle_effects()
+	deck[0]=questions[3].duplicate(true)
 	_open_card(0)
 	assert(phase=="answer","Reduced effects must retain the playable card")
 	_resolve(true)
 	assert(phase=="feedback")
 	_toggle_effects()
-	lab_enabled=true
 	_new_game(2)
 	assert(await _wait_phase("draw"))
 	players[turn].score=3
@@ -1019,15 +1028,13 @@ func _effects_test() -> void:
 	assert(phase=="resolving" and int(players[turn].score)==2)
 	assert(await _wait_phase("feedback"),"Penalty step must finish")
 	assert(pawns[turn].position.distance_to(_pawn_at(turn,2))<.01,"Penalty must move the pawn back")
-	print("GODOT_EFFECTS_PASS: deal, flip, input gates, exact jumps, victory, reduced effects and animated −1 penalty.")
+	print("GODOT_EFFECTS_PASS: journey deal, flip, input gates, exact jumps, victory, reduced effects and animated −1 penalty.")
 	get_tree().quit(0)
 
 func _capture() -> void:
 	await _wait_phase("draw")
 	var args:=OS.get_cmdline_user_args()
 	if args.has("--capture-lab") or args.has("--capture-lab-wrong"):
-		lab_enabled=true
-		lab_button.text="Лаборатория: вкл"
 		_new_game(2)
 		await _wait_phase("draw")
 		var wanted: String=OS.get_environment("FIZ_LAB_ANIM")
@@ -1048,6 +1055,7 @@ func _capture() -> void:
 		else:await get_tree().create_timer(1.2).timeout
 	else:
 		if args.has("--capture-card") or args.has("--capture-correct") or args.has("--capture-wrong") or args.has("--capture-victory"):
+			deck[1]=questions[0].duplicate(true)
 			_open_card(1)
 			await _wait_phase("answer")
 		if args.has("--capture-correct") or args.has("--capture-wrong") or args.has("--capture-victory"):
