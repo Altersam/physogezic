@@ -46,6 +46,9 @@ try:
         host.wait_for_function('window.physogezicLoaded===true && window.physogezicGameState?.networkMode===true',timeout=120000)
         code=host.url.split('room=')[1];assert len(code)==6
         expect(host.locator('#host-lobby')).to_be_visible();host.locator('.room-qr').wait_for();host.wait_for_function('document.querySelector(".room-qr").naturalWidth>0')
+        qr_check=host.evaluate("""async code=>{const info=await(await fetch('/api/server-info')).json();const auto=await(await fetch(`/api/rooms/${code}/qr?target=godot`)).text();const explicit=await(await fetch(`/api/rooms/${code}/qr?target=godot&base=${encodeURIComponent(info.urls[0])}`)).text();return {base:info.urls[0],same:auto===explicit};}""",code)
+        assert qr_check['same'],qr_check
+        print('NETWORK_QR_PASS: invitation uses the server-selected LAN/public address:',qr_check['base'])
         host.screenshot(path=str(OUT/'host-invite.png'),full_page=True)
         for page,name in zip(phones,['Аня','Борис']):
             page.goto(BASE+'/godot/?room='+code);page.locator('#player-name').fill(name);page.locator('#join-form button').click();expect(page.locator('.player-score')).to_be_visible()

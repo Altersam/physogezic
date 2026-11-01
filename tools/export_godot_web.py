@@ -115,7 +115,7 @@ def main():
                 run(godot,project,['--editor','--import'])
                 break
             except RuntimeError as error:
-                if attempt==2 or 'exit code -11' not in str(error):raise
+                if attempt==2 or not any(code in str(error) for code in ('exit code -11','exit code 3221225477')):raise
                 print('Godot importer segfaulted; retrying with the recovered import cache...',flush=True)
         run(godot,project,['--export-release','Web',str(out/'index.html')])
     for name in ('index.html','index.js','index.wasm','index.pck'):
