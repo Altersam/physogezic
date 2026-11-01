@@ -106,7 +106,7 @@ def main():
     out.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='physogezic-web-stage-',dir=TEMP) as temp:
         project=Path(temp)/'project'
-        shutil.copytree(ROOT/'Godot3D',project,ignore=shutil.ignore_patterns('.godot','*.import','*.log','*.exe'))
+        shutil.copytree(ROOT/'Godot3D',project,ignore=shutil.ignore_patterns('.godot','*.log','*.exe'))
         presets=project/'export_presets.cfg'
         config=presets.read_text(encoding='utf-8').replace('custom_template/release=""','custom_template/release='+json.dumps(template.as_posix()))
         presets.write_text(config,encoding='utf-8')
