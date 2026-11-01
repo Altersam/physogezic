@@ -74,16 +74,16 @@ func glow_material(color: Color) -> StandardMaterial3D:
 func halo(color: Color, radius: float) -> Sprite3D:
 	var key: String=color.to_html()
 	if not textures.has(key):
-		var image:=Image.create(64,64,false,Image.FORMAT_RGBA8)
-		for y in range(64):
-			for x in range(64):
-				var distance: float=Vector2(x-31.5,y-31.5).length()/32.0
+		var image:=Image.create(256,256,false,Image.FORMAT_RGBA8)
+		for y in range(256):
+			for x in range(256):
+				var distance: float=Vector2(x-127.5,y-127.5).length()/128.0
 				var alpha: float=pow(maxf(0.0,1.0-distance),2.2)*0.55
 				image.set_pixel(x,y,Color(color.r,color.g,color.b,alpha))
 		textures[key]=ImageTexture.create_from_image(image)
 	var sprite:=Sprite3D.new()
 	sprite.texture=textures[key]
-	sprite.pixel_size=radius/32.0
+	sprite.pixel_size=radius/128.0
 	sprite.shaded=false
 	sprite.no_depth_test=false
 	sprite.rotation_degrees.x=-90
