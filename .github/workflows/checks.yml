@@ -48,6 +48,8 @@ jobs:
           python -m pip install playwright
           python -m playwright install --with-deps chromium
           python tools/check_webgl.py
+      - name: Verify networked Godot host and two phones
+        run: python tools/check_network_godot.py
       - uses: actions/upload-artifact@v4
         with:
           name: physogezic-browser-site

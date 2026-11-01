@@ -11,7 +11,7 @@ function bases(req,port){const ips=Object.entries(os.networkInterfaces()).flatMa
 const server=http.createServer(async(req,res)=>{
   let url;try{url=new URL(req.url,'http://localhost');url.pathname=decodeURIComponent(url.pathname);}catch{res.writeHead(400).end();return;}
   try{
-    if(url.pathname==='/api/server-info'){json(res,200,{urls:bases(req,server.address().port),port:server.address().port,version:4});return;}
+    if(url.pathname==='/api/server-info'){json(res,200,{urls:bases(req,server.address().port),port:server.address().port,version:5});return;}
     if(url.pathname==='/api/rooms'&&req.method==='POST'){
       if(rooms.size>=200)throw Object.assign(new Error('Слишком много активных комнат.'),{status:429});
       const body=await readJSON(req);let code;do{code=String(crypto.randomInt(100000,1000000));}while(rooms.has(code));
@@ -30,7 +30,7 @@ const server=http.createServer(async(req,res)=>{
       if(action==='qr'&&req.method==='GET'){
         const qr=require('./vendor/qrcode.cjs'),code=qr(0,'M'),base=url.searchParams.get('base')||bases(req,server.address().port)[0];
         if(!/^https?:\/\/[^\s<>"']{1,200}$/.test(base))throw Object.assign(new Error('Некорректный адрес.'),{status:422});
-        code.addData(base.replace(/\/$/,'')+'/#room/'+room.code);code.make();res.writeHead(200,{'Content-Type':'image/svg+xml','Cache-Control':'no-store'}).end(code.createSvgTag({cellSize:6,margin:18,scalable:true}));return;
+        code.addData(base.replace(/\/$/,'')+(url.searchParams.get('target')==='godot'?'/godot/?room=':'/#room/')+room.code);code.make();res.writeHead(200,{'Content-Type':'image/svg+xml','Cache-Control':'no-store'}).end(code.createSvgTag({cellSize:6,margin:18,scalable:true}));return;
       }
       json(res,405,{error:'Метод не поддерживается.'});return;
     }

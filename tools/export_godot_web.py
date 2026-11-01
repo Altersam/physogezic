@@ -114,6 +114,7 @@ def main():
         run(godot,project,['--export-release','Web',str(out/'index.html')])
     for name in ('index.html','index.js','index.wasm','index.pck'):
         if not (out/name).is_file():raise RuntimeError('Missing export: '+name)
+    shutil.copy2(ROOT/'Godot3D'/'network_client.js',out/'network_client.js')
     licenses=out/'licenses'
     licenses.mkdir(exist_ok=True)
     for file in (ROOT/'Godot3D'/'assets'/'fonts').glob('*OFL.txt'):shutil.copy2(file,licenses/file.name)

@@ -68,6 +68,7 @@ var player_options: HBoxContainer
 var host_panel: PanelContainer
 var host_status: Label
 var host_question: Label
+var host_next_button: Button
 var mobile_layout: bool=false
 var host_mode: bool=false
 var current_stage: int=-1
@@ -80,6 +81,12 @@ var cell_rims: Array[MeshInstance3D]=[]
 var cell_halos: Array[Sprite3D]=[]
 var web_state_pending: bool=false
 var game_theme: Theme
+var network_mode: bool=false
+var network_revision: int=-1
+var network_code: String=""
+var network_market: Array=[]
+var network_round_id: String=""
+var network_callback: JavaScriptObject
 
 func _ready() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
@@ -115,6 +122,9 @@ func _ready() -> void:
 	add_child(turn_halo)
 	_new_game(2)
 	_apply_responsive_layout()
+	if OS.has_feature("web"):
+		network_callback=JavaScriptBridge.create_callback(_network_from_js)
+		JavaScriptBridge.get_interface("window").physogezicGodotApply=network_callback
 	if args.has("--lab-test"):
 		call_deferred("_lab_test")
 	elif args.has("--journey-test"):
@@ -125,6 +135,103 @@ func _ready() -> void:
 		call_deferred("_effects_test")
 	elif args.has("--capture"):
 		call_deferred("_capture")
+
+func _network_from_js(arguments: Array) -> void:
+	if arguments.is_empty():return
+	var state: Variant=JSON.parse_string(str(arguments[0]))
+	if state is Dictionary and str(state.get("role",""))=="host":_apply_network_state(state)
+
+func _network_command(kind: String, data: Dictionary={}) -> void:
+	if not OS.has_feature("web"):return
+	var payload: Dictionary={"type":kind,"roundId":network_round_id}
+	for key: String in data:payload[key]=data[key]
+	JavaScriptBridge.get_interface("window").physogezicRoomCommand(JSON.stringify(payload))
+
+func _apply_network_state(state: Dictionary) -> void:
+	var revision: int=int(state.get("revision",0))
+	if revision==network_revision:return
+	network_revision=revision
+	network_mode=true
+	host_mode=true
+	network_code=str(state.get("code",""))
+	network_round_id=str(state.get("roundId",""))
+	network_market=state.get("market",[])
+	role_button.visible=false
+	player_options.visible=false
+	header_label.text="ФИЗОГЭЗИК · СЕТЕВОЙ СТОЛ · "+network_code
+	camera.size=10.7
+	if str(state.get("phase",""))=="lobby":
+		phase="lobby"
+		active={}
+		players=[]
+		lab_stage.hide_experiment()
+		host_panel.visible=false
+		panel.visible=false
+		host_hint.visible=true
+		host_hint.text="СЕТЕВАЯ КОМНАТА "+network_code+"\nОткройте «Комната», покажите QR и запустите партию"
+		for card: Node3D in cards:card.visible=false
+		_queue_web_state()
+		return
+	var state_players: Array=state.get("players",[])
+	if players.size()!=state_players.size():_new_game(state_players.size())
+	players=[]
+	for index: int in range(state_players.size()):
+		var p: Dictionary=state_players[index]
+		players.append({"id":str(p.id),"name":str(p.name),"score":int(p.score),"streak":int(p.streak)})
+	turn=0
+	for index: int in range(players.size()):
+		if players[index].id==str(state.get("activePlayerId","")):turn=index
+		pawns[index].position=_pawn_at(index,int(players[index].score))
+	deck=[]
+	deck.resize(int(state.get("remaining",0)))
+	var remote_phase: String=str(state.get("phase",""))
+	active={}
+	if remote_phase=="draw":
+		phase="draw"
+		_reset_cards()
+		phase="draw"
+		_refresh()
+	elif state.get("question",null) is Dictionary:
+		active=(state.question as Dictionary).duplicate(true)
+		_show_network_card()
+		phase="feedback" if remote_phase in ["reveal","finished"] else "answer"
+		status.text="Общий стол · "+str(state.get("activePlayerName",""))
+		question_label.text=""
+		_clear_answers()
+		_refresh()
+	else:
+		phase="finished"
+		_refresh()
+	if remote_phase=="finished":
+		host_hint.text="ПУТЕШЕСТВИЕ ЗАВЕРШЕНО\nИтоги доступны участникам на их устройствах"
+	elif remote_phase=="draw":
+		host_hint.text="ХОД: "+str(state.get("activePlayerName",""))+"\nУчастник выбирает карту на своём устройстве"
+	_sync_role_view()
+	_apply_responsive_layout()
+	_queue_web_state()
+
+func _show_network_card() -> void:
+	var slot: int=clampi(int(active.get("slot",0)),0,2)
+	selected_card=cards[slot]
+	for card: Node3D in cards:
+		card.get_node("HoverRing").visible=false
+		card.visible=card==selected_card
+	var art: MeshInstance3D=selected_card.get_node("BackArt")
+	var front: MeshInstance3D=selected_card.get_node("FrontArt")
+	var front_material:=_material(Color.WHITE)
+	front_material.albedo_texture=_front_texture(active)
+	front_material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+	front.material_override=front_material
+	front.visible=true
+	art.visible=false
+	selected_card.rotation=Vector3(.55,0,PI)
+	selected_card.position=Vector3(0,1.45,.4)
+	selected_card.scale=Vector3.ONE*1.55
+	if str(active.get("kind",""))=="experiment":
+		lab_stage.position=Vector3(-1.85,.36,-1.65)
+		lab_stage.scale=Vector3.ONE*.86
+		lab_stage.show_experiment(active)
+	else:lab_stage.hide_experiment()
 
 func _material(color: Color) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
@@ -481,6 +588,9 @@ func _build_ui() -> void:
 	host_note.modulate=Color("b8a5ca")
 	host_note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	host_column.add_child(host_note)
+	host_next_button=_button("Продолжить путь →",_next_turn)
+	host_next_button.visible=false
+	host_column.add_child(host_next_button)
 	host_panel.visible=false
 	for child in layer.get_children():
 		if child is Control:child.theme=game_theme
@@ -573,6 +683,7 @@ func _sync_role_view() -> void:
 	help_label.visible=not host_mode and not mobile_layout
 	host_panel.visible=host_mode and shared_active
 	host_hint.visible=host_mode and not shared_active
+	host_next_button.visible=network_mode and phase=="feedback" and shared_active
 	role_button.text=("Участник" if host_mode else "Стол учителя") if mobile_layout else ("Участник: карты" if host_mode else "Ведущий: стол")
 	role_button.tooltip_text="Вернуть карты и опыты участника" if host_mode else "Показать общий стол, вопрос и опыт без вариантов ответа"
 	if host_mode:
@@ -640,12 +751,12 @@ func _update_badges() -> void:
 		child.queue_free()
 	for i in range(players.size()):
 		var badge:=PanelContainer.new()
-		badge.add_theme_stylebox_override("panel",_style(Color("29273e"),COLORS[i] if i==turn else Color("4b4163")))
+		badge.add_theme_stylebox_override("panel",_style(Color("29273e"),COLORS[i%COLORS.size()] if i==turn else Color("4b4163")))
 		badge.custom_minimum_size.x=155
 		var label:=Label.new()
 		label.text=("▶ " if i==turn else "")+str(players[i].name)+"    "+str(players[i].score)+"/15"
 		label.add_theme_font_size_override("font_size",13)
-		label.modulate=COLORS[i]
+		label.modulate=COLORS[i%COLORS.size()]
 		badge.add_child(label)
 		player_badges.add_child(badge)
 
@@ -670,7 +781,7 @@ func _new_game(count: int) -> void:
 		cylinder.height=0.33
 		cylinder.radial_segments=48
 		base.mesh=cylinder
-		base.material_override=_material(COLORS[i])
+		base.material_override=_material(COLORS[i%COLORS.size()])
 		base.position.y=0.2
 		pawn.add_child(base)
 		var head := MeshInstance3D.new()
@@ -680,7 +791,7 @@ func _new_game(count: int) -> void:
 		sphere.radial_segments=32
 		sphere.rings=16
 		head.mesh=sphere
-		head.material_override=_material(COLORS[i].lightened(0.14))
+		head.material_override=_material(COLORS[i%COLORS.size()].lightened(0.14))
 		head.position.y=0.5
 		pawn.add_child(head)
 		for side in [-1,1]:
@@ -704,7 +815,7 @@ func _new_game(count: int) -> void:
 			pupil.material_override=fx.glow_material(Color("25213b"))
 			pupil.position=Vector3(side*.057,.51,.167)
 			pawn.add_child(pupil)
-		var aura: MeshInstance3D=fx.ring(Vector3(0,.045,0),COLORS[i],.23)
+		var aura: MeshInstance3D=fx.ring(Vector3(0,.045,0),COLORS[i%COLORS.size()],.23)
 		pawn.add_child(aura)
 		pawn.position=_cell(0)+Vector3((i-(count-1)/2.0)*.45,.14,0)
 		pawns.append(pawn)
@@ -820,6 +931,11 @@ func _clear_answers() -> void:
 		child.queue_free()
 
 func _open_card(slot: int) -> void:
+	if network_mode:
+		if phase!="draw":return
+		for card: Dictionary in network_market:
+			if int(card.slot)==slot:_network_command("draw",{"cardId":card.id});return
+		return
 	if phase!="draw" or slot>=deck.size():return
 	active=deck.pop_at(slot)
 	phase="answer" if smoke or not fx.enabled else "opening"
@@ -913,7 +1029,7 @@ func _publish_web_state() -> void:
 	web_state_pending=false
 	var controls: Array=[]
 	_collect_web_controls(hud,controls)
-	var payload: Dictionary={"phase":phase,"turn":turn,"remaining":deck.size(),"players":players,"hostMode":host_mode,"mobileLayout":mobile_layout,"sharedContent":host_panel.visible,"labVisible":lab_stage.visible,"stage":current_stage,"viewport":[get_viewport().get_visible_rect().size.x,get_viewport().get_visible_rect().size.y],"question":{"id":active.get("id",""),"type":active.get("type",""),"level":active.get("level",0)},"controls":controls}
+	var payload: Dictionary={"phase":phase,"turn":turn,"remaining":deck.size(),"players":players,"hostMode":host_mode,"networkMode":network_mode,"networkCode":network_code,"networkRevision":network_revision,"mobileLayout":mobile_layout,"sharedContent":host_panel.visible,"labVisible":lab_stage.visible,"stage":current_stage,"viewport":[get_viewport().get_visible_rect().size.x,get_viewport().get_visible_rect().size.y],"question":{"id":active.get("id",""),"type":active.get("type",""),"level":active.get("level",0)},"controls":controls}
 	print("PHYSOGEZIC_STATE:"+JSON.stringify(payload))
 
 func _collect_web_controls(node: Node, output: Array) -> void:
@@ -1046,6 +1162,9 @@ func _finish_resolution() -> void:
 	_refresh()
 
 func _next_turn() -> void:
+	if network_mode:
+		if phase=="feedback":_network_command("next")
+		return
 	if phase=="finished":_new_game(players.size());return
 	if phase!="feedback":return
 	if int(players[turn].score)>=GOAL or deck.is_empty():
