@@ -83,7 +83,7 @@ def run(godot,project,args):
     output=result.stdout+'\n'+result.stderr
     if result.returncode or re.search(r'(^ERROR:|SCRIPT ERROR)',output,re.MULTILINE):
         print(output)
-        raise RuntimeError('Godot Web export failed')
+        raise RuntimeError(f'Godot Web export failed with exit code {result.returncode}')
 
 def main():
     parser=argparse.ArgumentParser()
