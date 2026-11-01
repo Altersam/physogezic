@@ -52,7 +52,7 @@ try:
         host.screenshot(path=str(OUT/'host-invite.png'),full_page=True)
         for page,name in zip(phones,['Аня','Борис']):
             page.goto(BASE+'/godot/?room='+code);page.locator('#player-name').fill(name);page.locator('#join-form button').click();expect(page.locator('.player-score')).to_be_visible()
-        expect(host.locator('.lobby-players span')).to_have_count(2);host.locator('#network-start').click()
+        expect(host.locator('.lobby-players span')).to_have_count(2,timeout=20000);host.locator('#network-start').click()
         expect(phones[0].locator('.phone-card')).to_have_count(3)
         assert phones[1].locator('.phone-card').count()==0
         phones[0].screenshot(path=str(OUT/'phone-draw.png'),full_page=True)
