@@ -19,6 +19,7 @@ Godot3D/.godot/
 Godot3D/.editorconfig
 Godot3D/assets/*.import
 Godot3D/**/*.import
+!Godot3D/assets/fonts/*.import
 .env
 .env.*
 !.env.example
