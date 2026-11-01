@@ -5,9 +5,14 @@ const COLORS: Array[Color] = [Color("bda2ef"),Color("ffc586"),Color("87d7c8"),Co
 const Feedback=preload("res://game_fx.gd")
 const Journal=preload("res://journal.gd")
 const LabStage=preload("res://lab_stage.gd")
+const JourneyArt=preload("res://journey_art.gd")
 const GameFont=preload("res://game_font.tres")
 const TOPICS: Dictionary={"mechanics":"Механика","heat":"Тепловые явления","electricity":"Электричество","optics":"Оптика","quantum":"Квантовые явления"}
 const JOURNEY_STAGES: Array[String]=["Механическая долина","Тепловые острова","Электрический город","Сад света","Квантовый рубеж"]
+const STAGE_SUBTITLES: Array[String]=["Сила · движение · механизмы","Тепло · состояния · энергия","Заряд · цепи · магнетизм","Лучи · спектр · отражение","Атом · вероятность · излучение"]
+const STAGE_ACCENTS: Array[Color]=[Color("b9a0f1"),Color("ffad82"),Color("7ddfff"),Color("91e6c5"),Color("d4a8ff")]
+const STAGE_BACKGROUNDS: Array[Color]=[Color("0c1020"),Color("1c1020"),Color("081827"),Color("0c1c24"),Color("160d28")]
+const STAGE_COVERS: Array[Texture2D]=[preload("res://assets/stage-mechanics.svg"),preload("res://assets/stage-heat.svg"),preload("res://assets/stage-electricity.svg"),preload("res://assets/stage-optics.svg"),preload("res://assets/stage-quantum.svg")]
 var questions: Array = []
 var experiments: Array = []
 var deck: Array = []
@@ -52,12 +57,26 @@ var sound_button: Button
 var effect_button: Button
 var lab_button: Button
 var lab_stage: Node3D
+var journey_art: Node3D
+var stage_cover: TextureRect
+var role_button: Button
+var host_hint: Label
+var help_label: Label
+var host_mode: bool=false
+var current_stage: int=-1
+var stage_tween: Tween
+var world_sky: Environment
+var table_felt: MeshInstance3D
+var outer_ring: MeshInstance3D
+var inner_ring: MeshInstance3D
+var cell_rims: Array[MeshInstance3D]=[]
+var cell_halos: Array[Sprite3D]=[]
 var web_state_pending: bool=false
 var game_theme: Theme
 
 func _ready() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
-	smoke = args.has("--smoke") or args.has("--lab-test")
+	smoke = args.has("--smoke") or args.has("--lab-test") or args.has("--journey-test")
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/questions.json"))
 	var lab_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/experiments.json"))
 	if parsed is Array and lab_parsed is Array:
@@ -78,16 +97,20 @@ func _ready() -> void:
 	lab_stage.position=Vector3(-0.1,.36,-2.3)
 	lab_stage.scale=Vector3.ONE*.78
 	add_child(lab_stage)
+	journey_art=JourneyArt.new()
+	add_child(journey_art)
 	_build_ui()
 	get_viewport().size_changed.connect(_queue_web_state)
 	fx.setup(camera,mascot,hud)
-	if smoke:fx.set_enabled(false);fx.sound_enabled=false
-	elif OS.get_cmdline_user_args().has("--reduced-motion"):fx.set_enabled(false)
+	if smoke:fx.set_enabled(false);fx.sound_enabled=false;journey_art.set_enabled(false)
+	elif OS.get_cmdline_user_args().has("--reduced-motion"):fx.set_enabled(false);journey_art.set_enabled(false)
 	turn_halo=fx.halo(Color("ffe1a2"),.8)
 	add_child(turn_halo)
 	_new_game(2)
 	if args.has("--lab-test"):
 		call_deferred("_lab_test")
+	elif args.has("--journey-test"):
+		call_deferred("_journey_test")
 	elif smoke:
 		call_deferred("_smoke_test")
 	elif args.has("--effects-test"):
@@ -118,13 +141,13 @@ func _cell(index: int) -> Vector3:
 
 func _build_world() -> void:
 	var environment := WorldEnvironment.new()
-	var sky := Environment.new()
-	sky.background_mode = Environment.BG_COLOR
-	sky.background_color = Color("0c1020")
-	sky.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	sky.ambient_light_color = Color("b6b4e6")
-	sky.ambient_light_energy = 0.3
-	environment.environment = sky
+	world_sky = Environment.new()
+	world_sky.background_mode = Environment.BG_COLOR
+	world_sky.background_color = Color("0c1020")
+	world_sky.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	world_sky.ambient_light_color = Color("b6b4e6")
+	world_sky.ambient_light_energy = 0.3
+	environment.environment = world_sky
 	add_child(environment)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-55,-25,0)
@@ -144,33 +167,36 @@ func _build_world() -> void:
 	oval.top_radius=6.5
 	oval.bottom_radius=6.25
 	oval.height=.46
+	oval.radial_segments=96
 	base.mesh=oval
 	base.scale.z=.77
 	base.position.y=-.1
 	base.material_override=_material(Color("59416c"))
 	add_child(base)
-	var felt:=MeshInstance3D.new()
+	table_felt=MeshInstance3D.new()
 	var surface:=CylinderMesh.new()
 	surface.top_radius=6.23
 	surface.bottom_radius=6.3
 	surface.height=.13
-	felt.mesh=surface
-	felt.scale.z=.77
-	felt.position.y=.2
-	felt.material_override=fx.glow_material(Color("191b32"))
-	add_child(felt)
-	var outer: MeshInstance3D=fx.ring(Vector3(0,.29,0),Color("ab83da"),6.22)
-	outer.scale.z=.77
-	add_child(outer)
-	var inner: MeshInstance3D=fx.ring(Vector3(0,.3,0),Color("697db0"),5.96)
-	inner.scale.z=.77
-	add_child(inner)
+	surface.radial_segments=96
+	table_felt.mesh=surface
+	table_felt.scale.z=.77
+	table_felt.position.y=.2
+	table_felt.material_override=fx.glow_material(Color("191b32"))
+	add_child(table_felt)
+	outer_ring=fx.ring(Vector3(0,.29,0),Color("ab83da"),6.22)
+	outer_ring.scale.z=.77
+	add_child(outer_ring)
+	inner_ring=fx.ring(Vector3(0,.3,0),Color("697db0"),5.96)
+	inner_ring.scale.z=.77
+	add_child(inner_ring)
 	for i in range(16):
 		var marker := MeshInstance3D.new()
 		var cylinder := CylinderMesh.new()
 		cylinder.top_radius = 0.4 if i==0 or i==GOAL else 0.32
 		cylinder.bottom_radius = cylinder.top_radius+0.04
 		cylinder.height = 0.13
+		cylinder.radial_segments = 48
 		marker.mesh = cylinder
 		marker.material_override = _material(Color("c6a65f") if i==GOAL else Color("343454"))
 		marker.position = _cell(i)
@@ -179,9 +205,11 @@ func _build_world() -> void:
 		var cell_color: Color=Color("ffdc8a") if i==GOAL else Color("9e8de0") if i%3==0 else Color("70b7cc")
 		var rim: MeshInstance3D=fx.ring(_cell(i)+Vector3(0,.073,0),cell_color,cylinder.top_radius+.015)
 		add_child(rim)
+		cell_rims.append(rim)
 		var light_pad: Sprite3D=fx.halo(cell_color,.7)
 		light_pad.position=_cell(i)+Vector3(0,-.055,0)
 		add_child(light_pad)
+		cell_halos.append(light_pad)
 		var label := Label3D.new()
 		label.font=GameFont
 		label.text = "СТАРТ" if i==0 else "★" if i==GOAL else str(i)
@@ -345,6 +373,14 @@ func _build_ui() -> void:
 	response_badge.modulate=Color("b0a4cf")
 	response_badge.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	table_ui.add_child(response_badge)
+	stage_cover=TextureRect.new()
+	stage_cover.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+	stage_cover.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	stage_cover.custom_minimum_size=Vector2(0,100)
+	stage_cover.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	stage_cover.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	stage_cover.tooltip_text="Обложка текущего этапа путешествия"
+	table_ui.add_child(stage_cover)
 	progress=ProgressBar.new()
 	progress.max_value=15
 	progress.show_percentage=false
@@ -371,27 +407,42 @@ func _build_ui() -> void:
 	for n in range(1,5):
 		options.add_child(_button(str(n)+" игр.",_new_game.bind(n)))
 	lab_button=_button("Путешествие · 95 карт",_show_journey)
-	lab_button.position=Vector2(420,25)
-	lab_button.custom_minimum_size=Vector2(190,36)
+	lab_button.position=Vector2(350,25)
+	lab_button.custom_minimum_size=Vector2(160,36)
 	lab_button.tooltip_text="45 вопросов и 50 опытов перемешаны в одной колоде"
 	lab_button.add_theme_font_size_override("font_size",12)
 	layer.add_child(lab_button)
 	sound_button=_button("Звук: вкл",_toggle_sound)
-	sound_button.position=Vector2(620,25)
-	sound_button.custom_minimum_size=Vector2(120,36)
+	sound_button.position=Vector2(520,25)
+	sound_button.custom_minimum_size=Vector2(100,36)
 	sound_button.add_theme_font_size_override("font_size",12)
 	layer.add_child(sound_button)
 	effect_button=_button("Эффекты: вкл",_toggle_effects)
-	effect_button.position=Vector2(750,25)
-	effect_button.custom_minimum_size=Vector2(126,36)
+	effect_button.position=Vector2(630,25)
+	effect_button.custom_minimum_size=Vector2(110,36)
 	effect_button.add_theme_font_size_override("font_size",12)
 	layer.add_child(effect_button)
-	var help := Label.new()
-	help.text = "Кликни карту на столе или нажми 1 / 2 / 3.\nОбычная карта: +1–3. Опыт: +1–3 или −1 за ошибку."
-	help.position = Vector2(28,600)
-	help.modulate = Color("b7a3ca")
-	help.add_theme_font_size_override("font_size",14)
-	layer.add_child(help)
+	role_button=_button("Ведущий: стол",_toggle_host_mode)
+	role_button.position=Vector2(750,25)
+	role_button.custom_minimum_size=Vector2(130,36)
+	role_button.add_theme_font_size_override("font_size",12)
+	role_button.tooltip_text="Переключить общий стол ведущего и экран участника"
+	layer.add_child(role_button)
+	help_label=Label.new()
+	help_label.text = "Правила: карта +1–3; опыт +1–3 или −1 за ошибку.\nУчастник открывает карты и опыты. Ведущий показывает общий стол без ответов.\nКлик по карте или клавиши 1 / 2 / 3; смена роли — кнопка сверху."
+	help_label.position = Vector2(28,580)
+	help_label.modulate = Color("b7a3ca")
+	help_label.add_theme_font_size_override("font_size",13)
+	layer.add_child(help_label)
+	host_hint=Label.new()
+	host_hint.text="ВЕДУЩИЙ · ОБЩИЙ СТОЛ\nКарты, опыты и ответы участников скрыты"
+	host_hint.position=Vector2(325,600)
+	host_hint.size=Vector2(620,55)
+	host_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	host_hint.add_theme_font_size_override("font_size",16)
+	host_hint.modulate=Color("d8c9ef")
+	host_hint.visible=false
+	layer.add_child(host_hint)
 	for child in layer.get_children():
 		if child is Control:child.theme=game_theme
 
@@ -403,7 +454,31 @@ func _toggle_sound() -> void:
 func _toggle_effects() -> void:
 	fx.set_enabled(not fx.enabled)
 	lab_stage.set_animated(fx.enabled)
+	journey_art.set_enabled(fx.enabled)
 	effect_button.text="Эффекты: вкл" if fx.enabled else "Эффекты: выкл"
+
+func _toggle_host_mode() -> void:
+	host_mode=not host_mode
+	fx.set_table_focus(host_mode)
+	_sync_role_view()
+	_queue_web_state()
+
+func _sync_role_view() -> void:
+	panel.visible=not host_mode
+	help_label.visible=not host_mode
+	host_hint.visible=host_mode
+	role_button.text="Участник: карты" if host_mode else "Ведущий: стол"
+	role_button.tooltip_text="Вернуть карты и опыты участника" if host_mode else "Показать общий стол без карт и ответов"
+	if host_mode:
+		player_label.text="Общий стол ведущего · очки и маршрут видны всем · ответы скрыты"
+	var experiment_visible: bool=not host_mode and str(active.get("kind",""))=="experiment" and phase in ["opening","answer","resolving","feedback"]
+	lab_stage.visible=experiment_visible
+	mascot.visible=not experiment_visible
+	journey_art.visible=not experiment_visible
+	for index: int in range(cards.size()):
+		if host_mode:cards[index].visible=false
+		elif phase in ["draw","dealing"]:cards[index].visible=index<deck.size()
+		else:cards[index].visible=cards[index]==selected_card
 
 func _show_journey() -> void:
 	if not smoke:fx.toast("5 ЭТАПОВ · 45 ВОПРОСОВ + 50 ОПЫТОВ",Color("ffe0a0"))
@@ -432,7 +507,7 @@ func _process(delta: float) -> void:
 		finish_light.position.y=_cell(GOAL).y+.6+sin(stage_time*1.8)*.1
 
 func _physics_process(_delta: float) -> void:
-	if smoke or phase!="draw":return
+	if smoke or host_mode or phase!="draw":return
 	var pointer:=get_viewport().get_mouse_position()
 	var next_hover: int=-1
 	if pointer.x<890:
@@ -466,6 +541,8 @@ func _update_badges() -> void:
 func _new_game(count: int) -> void:
 	if card_tween and card_tween.is_valid():card_tween.kill()
 	if movement_tween and movement_tween.is_valid():movement_tween.kill()
+	if stage_tween and stage_tween.is_valid():stage_tween.kill()
+	current_stage=-1
 	if is_instance_valid(victory_panel):victory_panel.queue_free()
 	fx.clear_dynamic()
 	for pawn in pawns:pawn.queue_free()
@@ -556,11 +633,55 @@ func _reset_cards() -> void:
 			card_tween.tween_property(card,"scale",Vector3.ONE,.32).set_delay(i*.06)
 	if phase=="dealing":card_tween.chain().tween_callback(func()->void:phase="draw";_refresh())
 
+func _update_journey_stage(index: int) -> void:
+	stage_cover.texture=STAGE_COVERS[index]
+	if current_stage==index:return
+	var previous_stage: int=current_stage
+	current_stage=index
+	journey_art.set_stage(index)
+	var accent: Color=STAGE_ACCENTS[index]
+	progress.add_theme_stylebox_override("fill",_style(accent.darkened(.25),accent.lightened(.2)))
+	if stage_tween and stage_tween.is_valid():stage_tween.kill()
+	var duration: float=.75 if previous_stage>=0 and not smoke and fx.enabled else 0.0
+	if duration>0:
+		stage_tween=create_tween().set_parallel()
+		stage_cover.modulate=Color(1,1,1,.3)
+		stage_tween.tween_property(stage_cover,"modulate",Color.WHITE,.45)
+	_tint_resource(world_sky,"background_color",STAGE_BACKGROUNDS[index],duration)
+	_tint_resource(world_sky,"ambient_light_color",accent.lightened(.35),duration)
+	var felt_material: StandardMaterial3D=table_felt.material_override as StandardMaterial3D
+	_tint_resource(felt_material,"albedo_color",Color("191b32").lerp(accent,.13),duration)
+	_tint_resource(felt_material,"emission",Color("191b32").lerp(accent,.13),duration)
+	_tint_resource(outer_ring.material_override,"albedo_color",accent,duration)
+	_tint_resource(outer_ring.material_override,"emission",accent,duration)
+	var inner_color: Color=accent.lerp(Color("697db0"),.45)
+	_tint_resource(inner_ring.material_override,"albedo_color",inner_color,duration)
+	_tint_resource(inner_ring.material_override,"emission",inner_color,duration)
+	for cell_index: int in range(cell_rims.size()):
+		var cell_color: Color=_stage_cell_color(cell_index,index)
+		_tint_resource(cell_rims[cell_index].material_override,"albedo_color",cell_color,duration)
+		_tint_resource(cell_rims[cell_index].material_override,"emission",cell_color,duration)
+		if duration>0:stage_tween.tween_property(cell_halos[cell_index],"modulate",cell_color,duration)
+		else:cell_halos[cell_index].modulate=cell_color
+	if duration>0:
+		fx.stage_transition(STAGE_COVERS[index],JOURNEY_STAGES[index],STAGE_SUBTITLES[index],accent)
+		fx.burst(_pawn_at(turn,int(players[turn].score)),accent,20,1.35)
+
+func _tint_resource(target: Object, property: String, color: Color, duration: float) -> void:
+	if duration>0:stage_tween.tween_property(target,property,color,duration)
+	else:target.set(property,color)
+
+func _stage_cell_color(cell_index: int, stage_index_value: int) -> Color:
+	if cell_index==GOAL:return Color("ffdc8a")
+	var accent: Color=STAGE_ACCENTS[stage_index_value]
+	return accent if cell_index%3==0 else accent.lerp(Color("70b7cc"),.5)
+
 func _refresh() -> void:
 	var journey_stage: int=clampi(int(players[turn].score)/3,0,4)
 	player_label.text="Путешествие · "+str(deck.size())+" карт в колоде · вопросы и опыты перемешаны"
 	player_label.add_theme_font_size_override("font_size",12)
 	_update_badges()
+	_update_journey_stage(journey_stage)
 	progress.value=float(players[turn].score)
 	response_badge.text="Этап "+str(journey_stage+1)+"/5 · "+JOURNEY_STAGES[journey_stage]
 	if int(players[turn].streak)>0:response_badge.text+=" · Серия: "+str(players[turn].streak)
@@ -574,8 +695,9 @@ func _refresh() -> void:
 			var button:=_button("Открыть карту "+str(i+1),_open_card.bind(i))
 			button.disabled=phase!="draw"
 			answer_box.add_child(button)
-		panel.add_theme_stylebox_override("panel",_style(Color("1e2137"),Color("65548b")))
+		panel.add_theme_stylebox_override("panel",_style(Color("1e2137"),STAGE_ACCENTS[journey_stage].darkened(.35)))
 		status.modulate=Color("e5d6f4")
+	_sync_role_view()
 	_queue_web_state()
 
 func _clear_answers() -> void:
@@ -677,7 +799,7 @@ func _publish_web_state() -> void:
 	web_state_pending=false
 	var controls: Array=[]
 	_collect_web_controls(hud,controls)
-	var payload: Dictionary={"phase":phase,"turn":turn,"remaining":deck.size(),"players":players,"viewport":[get_viewport().get_visible_rect().size.x,get_viewport().get_visible_rect().size.y],"question":{"id":active.get("id",""),"type":active.get("type",""),"level":active.get("level",0)},"controls":controls}
+	var payload: Dictionary={"phase":phase,"turn":turn,"remaining":deck.size(),"players":players,"hostMode":host_mode,"stage":current_stage,"viewport":[get_viewport().get_visible_rect().size.x,get_viewport().get_visible_rect().size.y],"question":{"id":active.get("id",""),"type":active.get("type",""),"level":active.get("level",0)},"controls":controls}
 	print("PHYSOGEZIC_STATE:"+JSON.stringify(payload))
 
 func _collect_web_controls(node: Node, output: Array) -> void:
@@ -975,6 +1097,31 @@ func _lab_test() -> void:
 	print("GODOT_LAB_PASS: 50 unique animated 3D scenes, 95-card deck, hidden choices, +level, −1 and zero floor.")
 	get_tree().quit(0)
 
+func _journey_test() -> void:
+	for index: int in range(5):
+		players[turn].score=index*3
+		pawns[turn].position=_pawn_at(turn,index*3)
+		_refresh()
+		assert(current_stage==index,"Every route stage must be applied")
+		assert(stage_cover.texture==STAGE_COVERS[index],"Every stage needs its vector cover")
+		assert(journey_art.stage_index==index and journey_art.sigil.get_child_count()>0,"Every stage needs its own 3D sigil")
+		await get_tree().process_frame
+	_toggle_host_mode()
+	assert(host_mode and not panel.visible and host_hint.visible,"Host sees the common table")
+	for card: Node3D in cards:assert(not card.visible,"Host view must hide participant cards")
+	assert(is_zero_approx(fx.base_camera_offset),"Host table must be centered")
+	_toggle_host_mode()
+	assert(not host_mode and panel.visible and cards[0].visible,"Participant view restores cards")
+	deck[0]=experiments[0].duplicate(true)
+	_open_card(0)
+	assert(lab_stage.visible,"Participant can open a 3D experiment")
+	_toggle_host_mode()
+	assert(not lab_stage.visible and not selected_card.visible,"Host hides the experiment and its answer")
+	_toggle_host_mode()
+	assert(lab_stage.visible and selected_card.visible,"Participant experiment is restored without losing state")
+	print("GODOT_JOURNEY_PASS: five SVG covers, five animated 3D identities, palette changes and host/participant views.")
+	get_tree().quit(0)
+
 func _wait_phase(expected: String, seconds: float = 8.0) -> bool:
 	var deadline: int=Time.get_ticks_msec()+int(seconds*1000)
 	while phase!=expected and Time.get_ticks_msec()<deadline:
@@ -1044,6 +1191,16 @@ func _effects_test() -> void:
 func _capture() -> void:
 	await _wait_phase("draw")
 	var args:=OS.get_cmdline_user_args()
+	var stage_capture: String=OS.get_environment("FIZ_STAGE")
+	if not stage_capture.is_empty():
+		var stage_index_value: int=clampi(stage_capture.to_int(),0,4)
+		players[turn].score=stage_index_value*3
+		pawns[turn].position=_pawn_at(turn,stage_index_value*3)
+		_refresh()
+		await get_tree().create_timer(1.8).timeout
+	if OS.get_environment("FIZ_HOST")=="1" and not host_mode:
+		_toggle_host_mode()
+		await get_tree().create_timer(1.4).timeout
 	if args.has("--capture-lab") or args.has("--capture-lab-wrong"):
 		_new_game(2)
 		await _wait_phase("draw")

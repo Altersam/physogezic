@@ -118,6 +118,75 @@ func _process(delta: float) -> void:
 		camera.h_offset=base_camera_offset
 		camera.v_offset=0.0
 
+func set_table_focus(host_view: bool) -> void:
+	base_camera_offset=0.0 if host_view else 1.9
+	if is_instance_valid(camera):
+		camera.h_offset=base_camera_offset
+		camera.v_offset=0.0
+
+func stage_transition(cover: Texture2D, title: String, subtitle: String, accent: Color) -> void:
+	if not enabled:return
+	var root:=Control.new()
+	root.set_meta("game_effect",true)
+	root.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hud.add_child(root)
+	var card:=PanelContainer.new()
+	card.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	card.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	card.offset_left=-285
+	card.offset_right=285
+	card.offset_top=-145
+	card.offset_bottom=145
+	card.pivot_offset=Vector2(285,145)
+	var style:=StyleBoxFlat.new()
+	style.bg_color=Color("17172b")
+	style.border_color=accent
+	style.set_border_width_all(2)
+	style.border_width_bottom=5
+	style.set_corner_radius_all(20)
+	style.content_margin_left=18
+	style.content_margin_right=18
+	style.content_margin_top=14
+	style.content_margin_bottom=14
+	style.shadow_color=Color(0,0,0,.45)
+	style.shadow_size=24
+	card.add_theme_stylebox_override("panel",style)
+	root.add_child(card)
+	var column:=VBoxContainer.new()
+	column.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	column.add_theme_constant_override("separation",7)
+	card.add_child(column)
+	var image:=TextureRect.new()
+	image.texture=cover
+	image.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+	image.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	image.custom_minimum_size=Vector2(520,142)
+	image.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	column.add_child(image)
+	var heading:=Label.new()
+	heading.text=title
+	heading.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_override("font",GameFont)
+	heading.add_theme_font_size_override("font_size",28)
+	heading.add_theme_color_override("font_color",accent.lightened(.25))
+	column.add_child(heading)
+	var caption:=Label.new()
+	caption.text=subtitle
+	caption.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	caption.add_theme_font_override("font",GameFont)
+	caption.add_theme_font_size_override("font_size",14)
+	caption.add_theme_color_override("font_color",Color("c9badf"))
+	column.add_child(caption)
+	card.modulate=Color(1,1,1,0)
+	card.scale=Vector2.ONE*.92
+	var tween:=_remember(create_tween())
+	tween.tween_property(card,"modulate:a",1.0,.22)
+	tween.parallel().tween_property(card,"scale",Vector2.ONE,.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(1.05)
+	tween.tween_property(card,"modulate:a",0.0,.32)
+	tween.tween_callback(root.queue_free)
+
 func set_enabled(value: bool) -> void:
 	enabled=value
 	for mote in dust:mote.visible=value

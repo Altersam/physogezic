@@ -26,8 +26,15 @@ def run(arguments,marker=None,environment=None):
 run(['--headless','--editor','--import'])
 run(['--headless','--fixed-fps','60','--quit-after','300','--','--smoke'],'GODOT_SMOKE_PASS')
 run(['--headless','--fixed-fps','60','--quit-after','400','--','--lab-test'],'GODOT_LAB_PASS')
+run(['--headless','--fixed-fps','60','--quit-after','300','--','--journey-test'],'GODOT_JOURNEY_PASS')
 run(['--headless','--fixed-fps','60','--quit-after','2400','--','--effects-test'],'GODOT_EFFECTS_PASS')
 if args.screenshots:
+    def verify_capture(scene,target):
+        assert target.exists() and target.stat().st_size>10000
+        with target.open('rb') as image:
+            header=image.read(24)
+        assert header[:8]==b'\x89PNG\r\n\x1a\n'
+        assert struct.unpack('>II',header[16:24])==(3840,2160),f'{scene} is not native 4K'
     scenes=[('draw',None),('card',None),('correct',None),('wrong',None),('victory',None),
             ('lab-prism','prism'),('lab-pendulum','pendulum'),('lab-boiling','boiling'),
             ('lab-circuit','circuit'),('lab-atom','atom'),('lab-penalty','collision')]
@@ -40,10 +47,16 @@ if args.screenshots:
         environment={**os.environ,'FIZ_CAPTURE':str(target).replace('\\','/')}
         if experiment:environment['FIZ_LAB_ANIM']=experiment
         run(options,'GODOT_CAPTURE',environment)
-        assert target.exists() and target.stat().st_size>10000
-        with target.open('rb') as image:
-            header=image.read(24)
-        assert header[:8]==b'\x89PNG\r\n\x1a\n'
-        assert struct.unpack('>II',header[16:24])==(3840,2160),f'{scene} is not native 4K'
+        verify_capture(scene,target)
+    for stage in range(5):
+        scene=f'stage-{stage+1}'
+        target=out/f'{scene}.png'
+        environment={**os.environ,'FIZ_CAPTURE':str(target).replace('\\','/'),'FIZ_STAGE':str(stage)}
+        run(['--rendering-method','gl_compatibility','--','--capture'],'GODOT_CAPTURE',environment)
+        verify_capture(scene,target)
+    target=out/'host-table.png'
+    environment={**os.environ,'FIZ_CAPTURE':str(target).replace('\\','/'),'FIZ_HOST':'1'}
+    run(['--rendering-method','gl_compatibility','--','--capture'],'GODOT_CAPTURE',environment)
+    verify_capture('host-table',target)
     print('Rendered native 4K screenshots:',out)
-print('Godot gameplay, 50 animated experiments and feedback checks passed.')
+print('Godot gameplay, 50 experiments, five stage identities and host/participant checks passed.')

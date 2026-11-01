@@ -86,6 +86,14 @@ try:
                 x,y,w,h=control['rect'];vw,vh=data['viewport']
             page.locator('#canvas').click(position={'x':(x+w/2)/vw*box['width'],'y':(y+h/2)/vh*box['height']})
 
+        click_control('Ведущий: стол')
+        page.wait_for_function('window.physogezicGameState.hostMode===true')
+        assert not any(c['text'].startswith('Открыть карту') for c in state()['controls'])
+        page.screenshot(path=str(OUT/'godot-host-table.png'),full_page=True)
+        click_control('Участник: карты')
+        page.wait_for_function('window.physogezicGameState.hostMode===false')
+        assert any(c['text']=='Открыть карту 1' for c in state()['controls'])
+        print('HOST_PARTICIPANT_WEBGL_PASS')
         click_control('Открыть карту 1')
         page.wait_for_function('window.physogezicGameState.phase==="answer"',timeout=20000)
         card=state();assert card['remaining']==94
