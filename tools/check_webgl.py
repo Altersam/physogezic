@@ -46,6 +46,32 @@ try:
         assert 'application/wasm' in response.headers.get('content-type','')
         page.screenshot(path=str(OUT/'godot-webgl-running.png'),full_page=True)
 
+        # Реальные пропорции экрана, включая ультраширокий 3440×1440.
+        # Canvas обязан заполнять доступную область без рамок 16:9 и чёрных полос.
+        for width,height in ((1280,720),(1920,1080),(2560,1440),(3440,1440),(3840,2160),(1024,768)):
+            page.set_viewport_size({'width':width,'height':height})
+            page.wait_for_timeout(450)
+            metrics=page.evaluate('''() => {const c=document.querySelector('#canvas'),s=document.querySelector('#stage'),r=c.getBoundingClientRect(),q=s.getBoundingClientRect();return {width:c.width,height:c.height,cssWidth:r.width,cssHeight:r.height,stageWidth:q.width,stageHeight:q.height,dpr:devicePixelRatio,overflow:document.documentElement.scrollWidth>innerWidth};}''')
+            assert abs(metrics['cssWidth']-metrics['stageWidth'])<=2,metrics
+            assert abs(metrics['cssHeight']-metrics['stageHeight'])<=2,metrics
+            assert not metrics['overflow'],metrics
+            assert metrics['width']>=metrics['cssWidth']*metrics['dpr']-1,metrics
+            assert metrics['height']>=metrics['cssHeight']*metrics['dpr']-1,metrics
+            page.screenshot(path=str(OUT/f'godot-{width}x{height}.png'),full_page=True)
+            print('RESPONSIVE_CANVAS_PASS:',width,height,metrics)
+        page.set_viewport_size({'width':3440,'height':1440})
+        page.locator('#fullscreen').click()
+        page.wait_for_function('document.fullscreenElement!==null')
+        page.wait_for_timeout(450)
+        fullscreen_metrics=page.evaluate('''() => {const c=document.querySelector('#canvas'),r=c.getBoundingClientRect();return {width:r.width,height:r.height,viewportWidth:innerWidth,viewportHeight:innerHeight};}''')
+        assert abs(fullscreen_metrics['width']-fullscreen_metrics['viewportWidth'])<=1,fullscreen_metrics
+        assert abs(fullscreen_metrics['height']-fullscreen_metrics['viewportHeight'])<=1,fullscreen_metrics
+        page.screenshot(path=str(OUT/'godot-fullscreen-3440x1440.png'),full_page=True)
+        page.evaluate('document.exitFullscreen()')
+        page.wait_for_function('document.fullscreenElement===null')
+        page.set_viewport_size({'width':1440,'height':1000})
+        page.wait_for_timeout(450)
+
         def state():return page.evaluate('window.physogezicGameState')
         def click_control(text):
             data=state();control=next((c for c in data['controls'] if c['text']==text),None)
@@ -85,6 +111,35 @@ try:
         page.wait_for_function('window.physogezicGameState.controls.some(c=>c.text==="Звук: выкл")')
         click_control('Эффекты: вкл')
         page.wait_for_function('window.physogezicGameState.controls.some(c=>c.text==="Эффекты: выкл")')
+
+        # Находим настоящий опыт в обычной перемешанной колоде. Эффекты уже
+        # отключены, поэтому переходы быстрые, а игровые правила не изменены.
+        click_control('Продолжить путь →')
+        page.wait_for_function('window.physogezicGameState.phase==="draw"',timeout=20000)
+        found_lab=False
+        for attempt in range(45):
+            click_control('Открыть карту 1')
+            page.wait_for_function('window.physogezicGameState.phase==="answer"',timeout=20000)
+            if str(state()['question']['id']).startswith('lab'):
+                found_lab=True
+                break
+            click_control('Пока не знаю')
+            page.wait_for_function('window.physogezicGameState.phase==="feedback"',timeout=20000)
+            click_control('Продолжить путь →')
+            page.wait_for_function('window.physogezicGameState.phase==="draw"',timeout=20000)
+        assert found_lab,'No laboratory found in the mixed deck'
+        page.set_viewport_size({'width':3440,'height':1440})
+        page.wait_for_timeout(500)
+        page.locator('#fullscreen').click()
+        page.wait_for_function('document.fullscreenElement!==null')
+        page.wait_for_timeout(500)
+        page.screenshot(path=str(OUT/'godot-lab-fullscreen-3440x1440.png'),full_page=True)
+        page.evaluate('document.exitFullscreen()')
+        page.wait_for_function('document.fullscreenElement===null')
+        page.set_viewport_size({'width':1280,'height':720})
+        page.wait_for_timeout(500)
+        page.screenshot(path=str(OUT/'godot-lab-1280x720.png'),full_page=True)
+        print('RESPONSIVE_LAB_PASS:',state()['question']['id'])
         errors=page.evaluate('window.physogezicErrors')
         assert not errors,errors
         assert not failures,failures

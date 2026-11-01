@@ -79,6 +79,7 @@ func _ready() -> void:
 	lab_stage.scale=Vector3.ONE*.78
 	add_child(lab_stage)
 	_build_ui()
+	get_viewport().size_changed.connect(_queue_web_state)
 	fx.setup(camera,mascot,hud)
 	if smoke:fx.set_enabled(false);fx.sound_enabled=false
 	elif OS.get_cmdline_user_args().has("--reduced-motion"):fx.set_enabled(false)
@@ -215,7 +216,7 @@ func _build_world() -> void:
 	finish_light.position=_cell(GOAL)+Vector3(0,.6,0)
 	add_child(finish_light)
 	mascot = Sprite3D.new()
-	mascot.texture = load("res://assets/mascot.png")
+	mascot.texture = load("res://assets/mascot.svg")
 	mascot.pixel_size = 0.003
 	mascot.position = Vector3(-3.0,1.5,-0.4)
 	mascot.billboard = BaseMaterial3D.BILLBOARD_ENABLED
@@ -234,7 +235,7 @@ func _build_world() -> void:
 		art.mesh = plane
 		var mat := _material(Color.WHITE)
 		mat.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
-		mat.albedo_texture = load("res://assets/card-1.webp")
+		mat.albedo_texture = load("res://assets/card-1.svg")
 		mat.cull_mode = BaseMaterial3D.CULL_BACK
 		art.material_override = mat
 		art.position.y = 0.042
@@ -479,6 +480,7 @@ func _new_game(count: int) -> void:
 		cylinder.top_radius=0.17
 		cylinder.bottom_radius=0.22
 		cylinder.height=0.33
+		cylinder.radial_segments=48
 		base.mesh=cylinder
 		base.material_override=_material(COLORS[i])
 		base.position.y=0.2
@@ -487,8 +489,8 @@ func _new_game(count: int) -> void:
 		var sphere := SphereMesh.new()
 		sphere.radius=0.16
 		sphere.height=0.32
-		sphere.radial_segments=16
-		sphere.rings=8
+		sphere.radial_segments=32
+		sphere.rings=16
 		head.mesh=sphere
 		head.material_override=_material(COLORS[i].lightened(0.14))
 		head.position.y=0.5
@@ -498,8 +500,8 @@ func _new_game(count: int) -> void:
 			var eye_shape:=SphereMesh.new()
 			eye_shape.radius=.048
 			eye_shape.height=.096
-			eye_shape.radial_segments=8
-			eye_shape.rings=4
+			eye_shape.radial_segments=16
+			eye_shape.rings=8
 			eye.mesh=eye_shape
 			eye.material_override=fx.glow_material(Color("f9f5ff"))
 			eye.position=Vector3(side*.057,.51,.125)
@@ -508,8 +510,8 @@ func _new_game(count: int) -> void:
 			var pupil_shape:=SphereMesh.new()
 			pupil_shape.radius=.022
 			pupil_shape.height=.044
-			pupil_shape.radial_segments=8
-			pupil_shape.rings=4
+			pupil_shape.radial_segments=16
+			pupil_shape.rings=8
 			pupil.mesh=pupil_shape
 			pupil.material_override=fx.glow_material(Color("25213b"))
 			pupil.position=Vector3(side*.057,.51,.167)
@@ -587,9 +589,17 @@ func _open_card(slot: int) -> void:
 	phase="answer" if smoke or not fx.enabled else "opening"
 	selected_card=cards[slot]
 	var is_experiment: bool=str(active.get("kind",""))=="experiment"
+	# Установка и карта читаются по отдельности: эксперимент слева,
+	# компактная карта справа, а не одна поверх другой.
+	var card_destination:=Vector3(0,1.45,.4)
+	var card_scale: float=1.55
 	if is_experiment:
+		lab_stage.position=Vector3(-1.85,.36,-1.65)
+		lab_stage.scale=Vector3.ONE*.86
 		lab_stage.show_experiment(active)
 		mascot.visible=false
+		card_destination=Vector3(1.75,1.35,.75)
+		card_scale=1.35
 	if card_tween and card_tween.is_valid():card_tween.kill()
 	for card in cards:
 		card.get_node("HoverRing").visible=false
@@ -606,16 +616,16 @@ func _open_card(slot: int) -> void:
 	if phase=="answer":
 		art.visible=false
 		selected_card.rotation=Vector3(.55,0,PI)
-		selected_card.position=Vector3(0,1.45,.4)
-		selected_card.scale=Vector3.ONE*1.55
+		selected_card.position=card_destination
+		selected_card.scale=Vector3.ONE*card_scale
 	else:
 		fx.burst(selected_card.position,Color("cab2ff"),9,.65)
 		card_tween=create_tween().set_parallel()
-		card_tween.tween_property(selected_card,"position",Vector3(.0,1.45,.4),.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		card_tween.tween_property(selected_card,"position",card_destination,.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		card_tween.tween_property(selected_card,"rotation:z",PI,.7).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 		card_tween.tween_property(selected_card,"rotation:x",.55,.6)
 		card_tween.tween_property(selected_card,"rotation:y",0.0,.6)
-		card_tween.tween_property(selected_card,"scale",Vector3.ONE*1.55,.55).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		card_tween.tween_property(selected_card,"scale",Vector3.ONE*card_scale,.55).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		card_tween.chain().tween_callback(_enable_answers)
 	status.text="Опыт · +"+str(int(active.level))+" / −1 за ошибку" if is_experiment else "Карта на "+str(int(active.level))+(" балл" if int(active.level)==1 else " балла")
 	question_label.text=(str(active.title)+"\n\n" if is_experiment else "")+str(active.prompt)
@@ -721,7 +731,7 @@ func _front_texture(q: Dictionary) -> ViewportTexture:
 	var face:=TextureRect.new()
 	face.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 	face.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	face.texture=load("res://assets/happy.png")
+	face.texture=load("res://assets/happy.svg")
 	face_root.add_child(face)
 	face.position=Vector2(245,624)
 	face.size=Vector2(150,170)

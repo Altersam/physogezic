@@ -72,18 +72,14 @@ func glow_material(color: Color) -> StandardMaterial3D:
 	return mat
 
 func halo(color: Color, radius: float) -> Sprite3D:
-	var key: String=color.to_html()
-	if not textures.has(key):
-		var image:=Image.create(256,256,false,Image.FORMAT_RGBA8)
-		for y in range(256):
-			for x in range(256):
-				var distance: float=Vector2(x-127.5,y-127.5).length()/128.0
-				var alpha: float=pow(maxf(0.0,1.0-distance),2.2)*0.55
-				image.set_pixel(x,y,Color(color.r,color.g,color.b,alpha))
-		textures[key]=ImageTexture.create_from_image(image)
+	# Один векторный градиент 512×512 окрашивается для каждого эффекта.
+	# Не растягиваем процедурный растр и не создаём копию для каждого цвета.
+	if not textures.has("halo"):
+		textures["halo"]=load("res://assets/halo.svg")
 	var sprite:=Sprite3D.new()
-	sprite.texture=textures[key]
-	sprite.pixel_size=radius/128.0
+	sprite.texture=textures["halo"]
+	sprite.modulate=color
+	sprite.pixel_size=radius/256.0
 	sprite.shaded=false
 	sprite.no_depth_test=false
 	sprite.rotation_degrees.x=-90
@@ -94,8 +90,8 @@ func ring(location: Vector3, color: Color, radius: float = 0.35) -> MeshInstance
 	var torus:=TorusMesh.new()
 	torus.inner_radius=radius
 	torus.outer_radius=radius+0.025
-	torus.rings=24
-	torus.ring_segments=12
+	torus.rings=64
+	torus.ring_segments=16
 	node.mesh=torus
 	node.material_override=glow_material(color)
 	node.position=location

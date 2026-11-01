@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1162" height="1700" viewBox="0 0 581 850">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a58ad4"/><stop offset=".42" stop-color="#8068b3"/><stop offset="1" stop-color="#5d4b8e"/>
+    </linearGradient>
+    <linearGradient id="limb" x1="0" y1="0" x2=".8" y2="1">
+      <stop stop-color="#9279c1"/><stop offset="1" stop-color="#6a559b"/>
+    </linearGradient>
+    <linearGradient id="shorts" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#b4dc8c"/><stop offset="1" stop-color="#7fb86b"/>
+    </linearGradient>
+    <radialGradient id="iris" cx="38%" cy="30%" r="70%">
+      <stop stop-color="#a9bb69"/><stop offset=".58" stop-color="#718148"/><stop offset="1" stop-color="#4c5836"/>
+    </radialGradient>
+    <linearGradient id="bow" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#272451"/><stop offset="1" stop-color="#11142f"/>
+    </linearGradient>
+  </defs>
+  <!-- Контурные ноги и ступни: чистые кривые вместо увеличенного растра. -->
+  <path d="M198 540 C187 596 183 631 196 674 C207 713 204 752 197 777" fill="none" stroke="#3b315f" stroke-width="38" stroke-linecap="round"/>
+  <path d="M198 540 C187 596 183 631 196 674 C207 713 204 752 197 777" fill="none" stroke="url(#limb)" stroke-width="27" stroke-linecap="round"/>
+  <path d="M351 541 C361 591 365 629 350 674 C337 715 339 751 348 779" fill="none" stroke="#3b315f" stroke-width="38" stroke-linecap="round"/>
+  <path d="M351 541 C361 591 365 629 350 674 C337 715 339 751 348 779" fill="none" stroke="url(#limb)" stroke-width="27" stroke-linecap="round"/>
+  <path d="M202 766 C183 778 158 778 135 790 C116 799 103 815 111 824 C123 833 154 817 175 815 C151 827 139 837 150 842 C167 849 196 824 218 821 C238 817 244 798 231 783 C223 774 213 768 202 766Z" fill="url(#limb)" stroke="#3b315f" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M344 768 C363 779 389 778 413 790 C433 799 448 814 440 824 C429 834 398 818 376 816 C400 828 413 837 402 842 C385 849 355 825 333 821 C313 817 306 799 318 784 C325 775 335 769 344 768Z" fill="url(#limb)" stroke="#3b315f" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M126 817 L176 797 M151 830 L194 807 M423 817 L373 798 M399 830 L355 808" fill="none" stroke="#c0a8e0" stroke-width="4" stroke-linecap="round" opacity=".55"/>
+  <!-- Руки за корпусом. -->
+  <path d="M140 354 C109 380 69 399 31 425 C9 440 18 459 38 476 C64 497 95 510 128 523" fill="none" stroke="#3b315f" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M140 354 C109 380 69 399 31 425 C9 440 18 459 38 476 C64 497 95 510 128 523" fill="none" stroke="url(#limb)" stroke-width="27" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M408 354 C441 380 483 400 519 425 C541 440 531 461 511 477 C487 496 456 510 423 523" fill="none" stroke="#3b315f" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M408 354 C441 380 483 400 519 425 C541 440 531 461 511 477 C487 496 456 510 423 523" fill="none" stroke="url(#limb)" stroke-width="27" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Фирменный силуэт пламени. -->
+  <path d="M275 17 C234 40 167 77 135 131 C113 166 99 210 101 267 C78 302 90 364 121 402 C153 442 203 458 275 459 C350 460 400 436 427 391 C453 347 447 287 438 245 C427 199 400 174 375 155 C387 190 387 214 377 240 C367 191 338 157 323 125 C306 90 316 46 328 12 C311 11 292 12 275 17Z" fill="url(#body)" stroke="#3b315f" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M178 115 C152 153 140 194 143 239 C135 208 138 169 155 132 C164 113 177 97 193 82" fill="none" stroke="#d2bcec" stroke-width="7" stroke-linecap="round" opacity=".62"/>
+  <path d="M112 282 C101 338 127 391 171 418" fill="none" stroke="#b49bd8" stroke-width="5" stroke-linecap="round" opacity=".34"/>
+  <!-- Глаз с большим контрастом и двумя бликами. -->
+  <ellipse cx="272" cy="270" rx="82" ry="91" fill="#493a70" opacity=".5"/>
+  <ellipse cx="272" cy="273" rx="70" ry="78" fill="#fffaff"/>
+  <ellipse cx="272" cy="272" rx="56" ry="64" fill="url(#iris)"/>
+  <ellipse cx="272" cy="269" rx="40" ry="48" fill="#281226"/>
+  <ellipse cx="285" cy="244" rx="12" ry="14" fill="#fff"/>
+  <circle cx="302" cy="271" r="7" fill="#fff"/>
+  <path d="M203 220 C231 185 297 173 337 211" fill="none" stroke="#55417b" stroke-width="11" stroke-linecap="round"/>
+  <ellipse cx="165" cy="321" rx="25" ry="13" fill="#5b477f" opacity=".7"/>
+  <ellipse cx="378" cy="321" rx="25" ry="13" fill="#5b477f" opacity=".7"/>
+  <path d="M198 345 C211 351 219 347 224 335 M198 345 C213 377 243 391 275 391 C310 391 337 374 348 344 M348 344 C354 353 363 357 374 356" fill="none" stroke="#493664" stroke-width="6" stroke-linecap="round"/>
+  <!-- Шорты и бант. -->
+  <path d="M158 427 C199 445 337 449 389 426 L401 559 C375 563 348 568 325 578 L303 503 L280 503 L259 579 C231 568 201 563 174 566Z" fill="url(#shorts)" stroke="#4e684e" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M166 445 C225 459 327 461 389 443" fill="none" stroke="#d4eba8" stroke-width="5" opacity=".55"/>
+  <path d="M281 454 L280 503 M303 503 L304 456" fill="none" stroke="#638b59" stroke-width="4"/>
+  <path d="M271 449 C246 433 218 432 213 449 L213 475 C221 491 249 484 272 469 C294 486 323 491 333 475 L333 450 C326 432 299 434 275 449Z" fill="url(#bow)" stroke="#17152f" stroke-width="5"/>
+  <ellipse cx="273" cy="460" rx="15" ry="17" fill="#242044"/>
+  <!-- Ладони поверх шорт. -->
+  <path d="M127 489 C113 489 104 501 110 515 C115 528 130 539 143 536 C154 533 158 519 151 507 C145 496 137 490 127 489Z" fill="url(#limb)" stroke="#3b315f" stroke-width="5"/>
+  <path d="M421 489 C435 489 444 501 438 515 C433 528 418 539 405 536 C394 533 390 519 397 507 C403 496 411 490 421 489Z" fill="url(#limb)" stroke="#3b315f" stroke-width="5"/>
+  <path d="M115 507 L139 518 M119 498 L144 510 M433 507 L409 518 M429 498 L404 510" fill="none" stroke="#4c3b70" stroke-width="4" stroke-linecap="round"/>
+</svg>

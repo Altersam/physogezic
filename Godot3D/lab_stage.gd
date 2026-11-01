@@ -61,8 +61,8 @@ func _sphere(radius: float, location: Vector3, color: Color, parent: Node3D = nu
 	var mesh := SphereMesh.new()
 	mesh.radius = radius
 	mesh.height = radius * 2.0
-	mesh.radial_segments = 32
-	mesh.rings = 16
+	mesh.radial_segments = 48
+	mesh.rings = 24
 	return _mesh(mesh, location, color, parent, 0.12, glow)
 
 func _cylinder(radius: float, height: float, location: Vector3, color: Color, parent: Node3D = null, glow: float = 0.0) -> MeshInstance3D:
@@ -70,7 +70,7 @@ func _cylinder(radius: float, height: float, location: Vector3, color: Color, pa
 	mesh.top_radius = radius
 	mesh.bottom_radius = radius
 	mesh.height = height
-	mesh.radial_segments = 32
+	mesh.radial_segments = 48
 	return _mesh(mesh, location, color, parent, 0.35, glow)
 
 func _rod(a: Vector3, b: Vector3, radius: float, color: Color, parent: Node3D = null, glow: float = 0.0) -> MeshInstance3D:
@@ -83,8 +83,8 @@ func _ring(radius: float, location: Vector3, color: Color, parent: Node3D = null
 	var mesh := TorusMesh.new()
 	mesh.inner_radius = radius - 0.025
 	mesh.outer_radius = radius + 0.025
-	mesh.rings = 48
-	mesh.ring_segments = 10
+	mesh.rings = 64
+	mesh.ring_segments = 16
 	var node := _mesh(mesh, location, color, parent, 0.5, glow)
 	if vertical:
 		node.rotation_degrees.x = 90.0

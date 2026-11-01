@@ -43,6 +43,11 @@ jobs:
         run: |
           python tools/export_godot_web.py --godot godot
           python tools/build_site.py
+      - name: Verify real WebGL gameplay in Chromium
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+          python tools/check_webgl.py
       - uses: actions/upload-artifact@v4
         with:
           name: physogezic-browser-site

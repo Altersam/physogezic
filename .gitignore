@@ -20,8 +20,12 @@ Godot3D/.editorconfig
 Godot3D/assets/*.import
 Godot3D/**/*.import
 !Godot3D/assets/fonts/*.import
+!Godot3D/assets/*.svg.import
 .env
 .env.*
 !.env.example
 .DS_Store
 Thumbs.db
+/.venv/
+/.playwright-browsers/
+/review/
