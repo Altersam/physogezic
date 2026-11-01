@@ -36,8 +36,12 @@ try:
             page.screenshot(path=str(OUT/'launch-failure.png'),full_page=True)
             raise
         assert not page.evaluate('crossOriginIsolated'),'The test must exercise ordinary GitHub Pages hosting'
-        assert page.evaluate('window.physogezicGameState.remaining')==45
+        assert page.evaluate('window.physogezicGameState.remaining')==95
         assert page.evaluate('window.physogezicGameState.players.length')==2
+        canvas_metrics=page.evaluate('''() => {const c=document.querySelector('#canvas'),r=c.getBoundingClientRect();return {width:c.width,height:c.height,cssWidth:r.width,cssHeight:r.height,dpr:devicePixelRatio};}''')
+        assert canvas_metrics['width']>=canvas_metrics['cssWidth']*canvas_metrics['dpr']-1,canvas_metrics
+        assert canvas_metrics['height']>=canvas_metrics['cssHeight']*canvas_metrics['dpr']-1,canvas_metrics
+        print('CANVAS_RESOLUTION_PASS:',canvas_metrics)
         response=page.request.get(BASE+'godot/index.wasm')
         assert 'application/wasm' in response.headers.get('content-type','')
         page.screenshot(path=str(OUT/'godot-webgl-running.png'),full_page=True)
@@ -58,19 +62,19 @@ try:
 
         click_control('Открыть карту 1')
         page.wait_for_function('window.physogezicGameState.phase==="answer"',timeout=20000)
-        card=state();assert card['remaining']==44
+        card=state();assert card['remaining']==94
         page.screenshot(path=str(OUT/'godot-webgl-card.png'),full_page=True)
         if card['question']['type']=='match':
             click_control('Проверить переходы')
         else:
-            bank=json.loads((ROOT/'Godot3D'/'data'/'questions.json').read_text(encoding='utf-8'))
+            bank=json.loads((ROOT/'Godot3D'/'data'/'questions.json').read_text(encoding='utf-8'))+json.loads((ROOT/'Godot3D'/'data'/'experiments.json').read_text(encoding='utf-8'))
             q=next(q for q in bank if q['id']==card['question']['id'])
             click_control(q['options'][q['correct']])
         page.wait_for_function('window.physogezicGameState.phase==="feedback"',timeout=20000)
         resolved=state()
         assert resolved['players'][resolved['turn']]['score']==(card['question']['level'] if card['question']['type']=='choice' else 0)
         page.screenshot(path=str(OUT/'godot-webgl-feedback.png'),full_page=True)
-        click_control('Передать ход →')
+        click_control('Продолжить путь →')
         page.wait_for_function('window.physogezicGameState.phase==="draw" && window.physogezicGameState.turn===1',timeout=20000)
         page.locator('#canvas').focus();page.keyboard.press('2')
         page.wait_for_function('window.physogezicGameState.phase==="answer"',timeout=20000)
@@ -99,7 +103,7 @@ try:
         page.goto(BASE)
         page.screenshot(path=str(OUT/'launcher-mobile.png'),full_page=True)
         browser.close()
-        print('PASS: choice page, actual single-thread Godot WebGL startup, 45 cards, real card/answer/score/turn input, keyboard, sound/effects toggles, back navigation and repository URL prefix.')
+        print('PASS: choice page, actual single-thread Godot WebGL startup, 95 mixed cards, real card/answer/score/turn input, HiDPI canvas, keyboard, sound/effects toggles, back navigation and repository URL prefix.')
         print('Screenshots:',OUT)
 finally:
     server.terminate();server.wait(timeout=5)
