@@ -20,6 +20,7 @@ try:
     with sync_playwright() as pw:
         browser=pw.chromium.launch(headless=True,args=['--use-angle=swiftshader','--enable-unsafe-swiftshader','--disable-vulkan'])
         page=browser.new_page(viewport={'width':1440,'height':1000},device_scale_factor=1)
+        page.set_default_timeout(120000)
         failures=[];console=[]
         page.on('pageerror',lambda e:failures.append(str(e)))
         page.on('console',lambda m:console.append(m.type+': '+m.text))
