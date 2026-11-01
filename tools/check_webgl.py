@@ -57,7 +57,7 @@ try:
             assert not metrics['overflow'],metrics
             assert metrics['width']>=metrics['cssWidth']*metrics['dpr']-1,metrics
             assert metrics['height']>=metrics['cssHeight']*metrics['dpr']-1,metrics
-            page.screenshot(path=str(OUT/f'godot-{width}x{height}.png'),full_page=True)
+            page.screenshot(path=str(OUT/f'godot-{width}x{height}.png'),full_page=True,timeout=120000)
             print('RESPONSIVE_CANVAS_PASS:',width,height,metrics)
         page.set_viewport_size({'width':3440,'height':1440})
         page.locator('#fullscreen').click()
