@@ -19,6 +19,7 @@ const TOPIC_COLORS: Dictionary = {
 
 var specimen: Node3D
 var plaque: Label3D
+var game_font: Font
 var current_anim: String = ""
 var animated: bool = true
 var time: float = 0.0
@@ -105,6 +106,7 @@ func _arrow(a: Vector3, b: Vector3, color: Color, parent: Node3D = null) -> Node
 
 func _label(text: String, location: Vector3, color: Color = WHITE, font_size: int = 34, parent: Node3D = null) -> Label3D:
 	var label := Label3D.new()
+	if game_font != null:label.font=game_font
 	label.text = text
 	label.font_size = font_size
 	label.pixel_size = 0.007
@@ -145,6 +147,7 @@ func _build_stand() -> void:
 	var name_plate := _box(Vector3(4.2, 0.5, 0.06), Vector3(0, 0.24, 1.4), Color("1b2037"), self)
 	name_plate.rotation_degrees.x = -12.0
 	plaque = Label3D.new()
+	if game_font != null:plaque.font=game_font
 	plaque.font_size = 42
 	plaque.pixel_size = 0.0065
 	plaque.outline_size = 5
