@@ -58,5 +58,9 @@ if args.screenshots:
     environment={**os.environ,'FIZ_CAPTURE':str(target).replace('\\','/'),'FIZ_HOST':'1'}
     run(['--rendering-method','gl_compatibility','--','--capture'],'GODOT_CAPTURE',environment)
     verify_capture('host-table',target)
+    target=out/'host-lab-prism.png'
+    environment={**os.environ,'FIZ_CAPTURE':str(target).replace('\\','/'),'FIZ_HOST':'1','FIZ_LAB_ANIM':'prism'}
+    run(['--rendering-method','gl_compatibility','--','--capture','--capture-lab'],'GODOT_CAPTURE',environment)
+    verify_capture('host-lab-prism',target)
     print('Rendered native 4K screenshots:',out)
 print('Godot gameplay, 50 experiments, five stage identities and host/participant checks passed.')

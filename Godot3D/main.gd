@@ -26,6 +26,7 @@ var table_ui: VBoxContainer
 var status: Label
 var question_label: Label
 var answer_box: VBoxContainer
+var skip_button: Button
 var next_button: Button
 var player_label: Label
 var selected_pairs: Array = []
@@ -62,6 +63,12 @@ var stage_cover: TextureRect
 var role_button: Button
 var host_hint: Label
 var help_label: Label
+var header_label: Label
+var player_options: HBoxContainer
+var host_panel: PanelContainer
+var host_status: Label
+var host_question: Label
+var mobile_layout: bool=false
 var host_mode: bool=false
 var current_stage: int=-1
 var stage_tween: Tween
@@ -100,13 +107,14 @@ func _ready() -> void:
 	journey_art=JourneyArt.new()
 	add_child(journey_art)
 	_build_ui()
-	get_viewport().size_changed.connect(_queue_web_state)
+	get_viewport().size_changed.connect(_viewport_changed)
 	fx.setup(camera,mascot,hud)
 	if smoke:fx.set_enabled(false);fx.sound_enabled=false;journey_art.set_enabled(false)
 	elif OS.get_cmdline_user_args().has("--reduced-motion"):fx.set_enabled(false);journey_art.set_enabled(false)
 	turn_halo=fx.halo(Color("ffe1a2"),.8)
 	add_child(turn_halo)
 	_new_game(2)
+	_apply_responsive_layout()
 	if args.has("--lab-test"):
 		call_deferred("_lab_test")
 	elif args.has("--journey-test"):
@@ -338,12 +346,12 @@ func _build_ui() -> void:
 	hud = CanvasLayer.new()
 	add_child(hud)
 	var layer: CanvasLayer=hud
-	var header := Label.new()
-	header.text = "ФИЗОГЭЗИК · путешествие"
-	header.position = Vector2(28,20)
-	header.add_theme_font_size_override("font_size",24)
-	header.modulate = Color("e3d2f4")
-	layer.add_child(header)
+	header_label = Label.new()
+	header_label.text = "ФИЗОГЭЗИК · путешествие"
+	header_label.position = Vector2(28,20)
+	header_label.add_theme_font_size_override("font_size",24)
+	header_label.modulate = Color("e3d2f4")
+	layer.add_child(header_label)
 	player_label = Label.new()
 	player_label.position = Vector2(28,112)
 	player_label.add_theme_font_size_override("font_size",16)
@@ -399,13 +407,16 @@ func _build_ui() -> void:
 	answer_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	answer_box.add_theme_constant_override("separation",9)
 	scroll.add_child(answer_box)
+	skip_button=_button("Пока не знаю",_resolve.bind(false))
+	skip_button.visible=false
+	table_ui.add_child(skip_button)
 	next_button = _button("Передать ход",_next_turn)
 	table_ui.add_child(next_button)
-	var options := HBoxContainer.new()
-	options.position = Vector2(28,655)
-	layer.add_child(options)
+	player_options = HBoxContainer.new()
+	player_options.position = Vector2(28,655)
+	layer.add_child(player_options)
 	for n in range(1,5):
-		options.add_child(_button(str(n)+" игр.",_new_game.bind(n)))
+		player_options.add_child(_button(str(n)+" игр.",_new_game.bind(n)))
 	lab_button=_button("Путешествие · 95 карт",_show_journey)
 	lab_button.position=Vector2(350,25)
 	lab_button.custom_minimum_size=Vector2(160,36)
@@ -429,13 +440,13 @@ func _build_ui() -> void:
 	role_button.tooltip_text="Переключить общий стол ведущего и экран участника"
 	layer.add_child(role_button)
 	help_label=Label.new()
-	help_label.text = "Правила: карта +1–3; опыт +1–3 или −1 за ошибку.\nУчастник открывает карты и опыты. Ведущий показывает общий стол без ответов.\nКлик по карте или клавиши 1 / 2 / 3; смена роли — кнопка сверху."
+	help_label.text = "Правила: карта +1–3; опыт +1–3 или −1 за ошибку.\nУчастник отвечает на своём экране. Ведущий транслирует стол, вопрос и опыт без ответов.\nКлик по карте или клавиши 1 / 2 / 3; смена роли — кнопка сверху."
 	help_label.position = Vector2(28,580)
 	help_label.modulate = Color("b7a3ca")
 	help_label.add_theme_font_size_override("font_size",13)
 	layer.add_child(help_label)
 	host_hint=Label.new()
-	host_hint.text="ВЕДУЩИЙ · ОБЩИЙ СТОЛ\nКарты, опыты и ответы участников скрыты"
+	host_hint.text="ВЕДУЩИЙ · ОБЩИЙ СТОЛ\nВопрос и лаборатория появятся здесь без вариантов ответа"
 	host_hint.position=Vector2(325,600)
 	host_hint.size=Vector2(620,55)
 	host_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
@@ -443,8 +454,101 @@ func _build_ui() -> void:
 	host_hint.modulate=Color("d8c9ef")
 	host_hint.visible=false
 	layer.add_child(host_hint)
+	host_panel=PanelContainer.new()
+	host_panel.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
+	host_panel.offset_left=-385
+	host_panel.offset_right=-18
+	host_panel.offset_top=118
+	host_panel.offset_bottom=-92
+	host_panel.add_theme_stylebox_override("panel",_style(Color("1e2137"),Color("9b7ebb")))
+	layer.add_child(host_panel)
+	var host_column:=VBoxContainer.new()
+	host_column.add_theme_constant_override("separation",16)
+	host_panel.add_child(host_column)
+	host_status=Label.new()
+	host_status.add_theme_font_size_override("font_size",21)
+	host_status.modulate=Color("f0d8ff")
+	host_status.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	host_column.add_child(host_status)
+	host_question=Label.new()
+	host_question.add_theme_font_size_override("font_size",20)
+	host_question.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	host_question.size_flags_vertical=Control.SIZE_EXPAND_FILL
+	host_column.add_child(host_question)
+	var host_note:=Label.new()
+	host_note.text="ОБЩАЯ ТРАНСЛЯЦИЯ\nВарианты и правильный ответ видны только участнику"
+	host_note.add_theme_font_size_override("font_size",13)
+	host_note.modulate=Color("b8a5ca")
+	host_note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	host_column.add_child(host_note)
+	host_panel.visible=false
 	for child in layer.get_children():
 		if child is Control:child.theme=game_theme
+
+func _viewport_changed() -> void:
+	_apply_responsive_layout()
+	_queue_web_state()
+
+func _apply_responsive_layout() -> void:
+	var viewport_size: Vector2=get_viewport().get_visible_rect().size
+	var compact: bool=viewport_size.x<900 or viewport_size.y>viewport_size.x*1.15
+	# В портрете нельзя сохранять десктопную ширину 1280: она делает текст
+	# микроскопическим. Собственная мобильная сетка сохраняет читаемый масштаб.
+	var logical_size:=Vector2i(390,844) if compact else Vector2i(1280,720)
+	if get_viewport().content_scale_size!=logical_size:
+		get_viewport().content_scale_size=logical_size
+		viewport_size=get_viewport().get_visible_rect().size
+		compact=viewport_size.x<900 or viewport_size.y>viewport_size.x*1.15
+	mobile_layout=compact
+	header_label.text="ФИЗОГЭЗИК" if compact else "ФИЗОГЭЗИК · путешествие"
+	header_label.position=Vector2(14,16) if compact else Vector2(28,20)
+	header_label.add_theme_font_size_override("font_size",19 if compact else 24)
+	player_badges.position=Vector2(14,62) if compact else Vector2(28,64)
+	player_badges.add_theme_constant_override("separation",5 if compact else 10)
+	player_label.visible=not compact
+	stage_cover.visible=not compact
+	progress.visible=not compact
+	table_ui.add_theme_constant_override("separation",8 if compact else 12)
+	status.add_theme_font_size_override("font_size",18 if compact else 20)
+	question_label.add_theme_font_size_override("font_size",16 if compact else 18)
+	lab_button.visible=not compact
+	sound_button.visible=not compact
+	effect_button.visible=not compact
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT if compact else Control.PRESET_RIGHT_WIDE)
+	panel.offset_left=12 if compact else -385
+	panel.offset_right=-12 if compact else -18
+	panel.offset_top=350 if compact else 24
+	panel.offset_bottom=-72 if compact else -22
+	player_options.position=Vector2(14,viewport_size.y-59) if compact else Vector2(28,655)
+	player_options.add_theme_constant_override("separation",5 if compact else 4)
+	for option in player_options.get_children():
+		if option is Button:
+			option.custom_minimum_size=Vector2(0,44 if compact else 46)
+			option.add_theme_font_size_override("font_size",12 if compact else 16)
+	role_button.position=Vector2(viewport_size.x-139,14) if compact else Vector2(750,25)
+	role_button.custom_minimum_size=Vector2(125,42 if compact else 36)
+	help_label.visible=not compact
+	host_hint.position=Vector2(14,viewport_size.y-115) if compact else Vector2(325,600)
+	host_hint.size=Vector2(viewport_size.x-28,55) if compact else Vector2(620,55)
+	host_panel.offset_left=12 if compact else -385
+	host_panel.offset_right=-12 if compact else -18
+	host_panel.offset_top=150 if compact else 118
+	host_panel.offset_bottom=-72 if compact else -92
+	camera.size=6.4 if compact and not host_mode else 10.7
+	card_homes.clear()
+	for index: int in range(3):
+		card_homes.append(Vector3(-.72+index*.72,.65,.2) if compact else Vector3(-1.25+index*1.5,.5,.2))
+		if phase in ["draw","dealing"]:
+			cards[index].position=card_homes[index]
+			cards[index].scale=Vector3.ONE*(.72 if compact else 1.0)
+	if not active.is_empty() and phase not in ["draw","dealing"] and is_instance_valid(selected_card):
+		if str(active.get("kind",""))=="experiment":
+			lab_stage.position=Vector3(0,.75,-.5) if compact else Vector3(-1.85,.36,-1.65)
+			lab_stage.scale=Vector3.ONE*(.5 if compact else .86)
+		elif not host_mode:
+			selected_card.position=Vector3(0,1.1,.4) if compact else Vector3(0,1.45,.4)
+			selected_card.scale=Vector3.ONE*(1.05 if compact else 1.55)
+	_sync_role_view()
 
 func _toggle_sound() -> void:
 	fx.sound_enabled=not fx.sound_enabled
@@ -459,24 +563,31 @@ func _toggle_effects() -> void:
 
 func _toggle_host_mode() -> void:
 	host_mode=not host_mode
-	fx.set_table_focus(host_mode)
+	camera.size=10.7 if host_mode else (6.4 if mobile_layout else 10.7)
 	_sync_role_view()
 	_queue_web_state()
 
 func _sync_role_view() -> void:
+	var shared_active: bool=not active.is_empty() and phase in ["opening","answer","resolving","feedback"]
 	panel.visible=not host_mode
-	help_label.visible=not host_mode
-	host_hint.visible=host_mode
-	role_button.text="Участник: карты" if host_mode else "Ведущий: стол"
-	role_button.tooltip_text="Вернуть карты и опыты участника" if host_mode else "Показать общий стол без карт и ответов"
+	help_label.visible=not host_mode and not mobile_layout
+	host_panel.visible=host_mode and shared_active
+	host_hint.visible=host_mode and not shared_active
+	role_button.text=("Участник" if host_mode else "Стол учителя") if mobile_layout else ("Участник: карты" if host_mode else "Ведущий: стол")
+	role_button.tooltip_text="Вернуть карты и опыты участника" if host_mode else "Показать общий стол, вопрос и опыт без вариантов ответа"
 	if host_mode:
-		player_label.text="Общий стол ведущего · очки и маршрут видны всем · ответы скрыты"
-	var experiment_visible: bool=not host_mode and str(active.get("kind",""))=="experiment" and phase in ["opening","answer","resolving","feedback"]
+		player_label.text="Общий стол ведущего · вопрос и опыт для всех · варианты и ответ скрыты"
+		player_label.visible=not mobile_layout
+		if shared_active:
+			host_status.text=("ОБЩИЙ ОПЫТ · ИГРОК " if str(active.get("kind",""))=="experiment" else "ОБЩИЙ ВОПРОС · ИГРОК ")+str(turn+1)
+			host_question.text=(str(active.get("title",""))+"\n\n" if str(active.get("kind",""))=="experiment" else "")+str(active.get("prompt",""))
+	var experiment_visible: bool=shared_active and str(active.get("kind",""))=="experiment"
 	lab_stage.visible=experiment_visible
-	mascot.visible=not experiment_visible
-	journey_art.visible=not experiment_visible
+	mascot.visible=not experiment_visible and not mobile_layout
+	journey_art.visible=not experiment_visible and not mobile_layout
+	fx.set_table_focus(host_mode,mobile_layout,shared_active)
 	for index: int in range(cards.size()):
-		if host_mode:cards[index].visible=false
+		if host_mode or (mobile_layout and experiment_visible):cards[index].visible=false
 		elif phase in ["draw","dealing"]:cards[index].visible=index<deck.size()
 		else:cards[index].visible=cards[index]==selected_card
 
@@ -616,10 +727,11 @@ func _reset_cards() -> void:
 	if not smoke and fx.enabled:
 		phase="dealing"
 		card_tween=create_tween().set_parallel()
+	var resting_scale: float=.72 if mobile_layout else 1.0
 	for i in range(cards.size()):
 		var card: Node3D=cards[i]
 		card.rotation=Vector3.ZERO
-		card.scale=Vector3.ONE
+		card.scale=Vector3.ONE*resting_scale
 		card.position=card_homes[i]
 		card.visible=i<deck.size()
 		card.get_node("BackArt").visible=true
@@ -628,9 +740,9 @@ func _reset_cards() -> void:
 		card.get_node("Paper").material_override=_material(Color("c7b1e6"))
 		if not smoke and fx.enabled and card.visible:
 			card.position=card_homes[i]+Vector3(0,.8,-1.0)
-			card.scale=Vector3.ONE*.6
+			card.scale=Vector3.ONE*resting_scale*.6
 			card_tween.tween_property(card,"position",card_homes[i],.35).set_delay(i*.06).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-			card_tween.tween_property(card,"scale",Vector3.ONE,.32).set_delay(i*.06)
+			card_tween.tween_property(card,"scale",Vector3.ONE*resting_scale,.32).set_delay(i*.06)
 	if phase=="dealing":card_tween.chain().tween_callback(func()->void:phase="draw";_refresh())
 
 func _update_journey_stage(index: int) -> void:
@@ -685,6 +797,8 @@ func _refresh() -> void:
 	progress.value=float(players[turn].score)
 	response_badge.text="Этап "+str(journey_stage+1)+"/5 · "+JOURNEY_STAGES[journey_stage]
 	if int(players[turn].streak)>0:response_badge.text+=" · Серия: "+str(players[turn].streak)
+	skip_button.visible=phase in ["opening","answer"]
+	skip_button.disabled=phase!="answer"
 	next_button.visible=phase=="feedback" or phase=="finished"
 	next_button.text="Новое путешествие" if phase=="finished" else "Завершить маршрут!" if int(players[turn].score)>=GOAL else "Продолжить путь →"
 	if phase in ["draw","dealing"]:
@@ -711,13 +825,13 @@ func _open_card(slot: int) -> void:
 	phase="answer" if smoke or not fx.enabled else "opening"
 	selected_card=cards[slot]
 	var is_experiment: bool=str(active.get("kind",""))=="experiment"
-	# Установка и карта читаются по отдельности: эксперимент слева,
-	# компактная карта справа, а не одна поверх другой.
-	var card_destination:=Vector3(0,1.45,.4)
-	var card_scale: float=1.55
+	# На ПК установка и карта стоят рядом. На телефоне опыт занимает
+	# всю верхнюю зону, а вопрос и крупные ответы остаются снизу.
+	var card_destination:=Vector3(0,1.1,.4) if mobile_layout else Vector3(0,1.45,.4)
+	var card_scale: float=1.05 if mobile_layout else 1.55
 	if is_experiment:
-		lab_stage.position=Vector3(-1.85,.36,-1.65)
-		lab_stage.scale=Vector3.ONE*.86
+		lab_stage.position=Vector3(0,.75,-.5) if mobile_layout else Vector3(-1.85,.36,-1.65)
+		lab_stage.scale=Vector3.ONE*(.5 if mobile_layout else .86)
 		lab_stage.show_experiment(active)
 		mascot.visible=false
 		card_destination=Vector3(1.75,1.35,.75)
@@ -776,7 +890,6 @@ func _open_card(slot: int) -> void:
 			button.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 			button.custom_minimum_size.y=64
 			answer_box.add_child(button)
-	answer_box.add_child(_button("Пока не знаю",_resolve.bind(false)))
 	for child in answer_box.get_children():
 		if child is BaseButton:child.disabled=phase!="answer"
 	journal.record("Card opened: "+str(active.id))
@@ -787,6 +900,7 @@ func _enable_answers() -> void:
 	phase="answer"
 	for child in answer_box.get_children():
 		if child is BaseButton:child.disabled=false
+	skip_button.disabled=false
 	_queue_web_state()
 
 func _queue_web_state() -> void:
@@ -799,7 +913,7 @@ func _publish_web_state() -> void:
 	web_state_pending=false
 	var controls: Array=[]
 	_collect_web_controls(hud,controls)
-	var payload: Dictionary={"phase":phase,"turn":turn,"remaining":deck.size(),"players":players,"hostMode":host_mode,"stage":current_stage,"viewport":[get_viewport().get_visible_rect().size.x,get_viewport().get_visible_rect().size.y],"question":{"id":active.get("id",""),"type":active.get("type",""),"level":active.get("level",0)},"controls":controls}
+	var payload: Dictionary={"phase":phase,"turn":turn,"remaining":deck.size(),"players":players,"hostMode":host_mode,"mobileLayout":mobile_layout,"sharedContent":host_panel.visible,"labVisible":lab_stage.visible,"stage":current_stage,"viewport":[get_viewport().get_visible_rect().size.x,get_viewport().get_visible_rect().size.y],"question":{"id":active.get("id",""),"type":active.get("type",""),"level":active.get("level",0)},"controls":controls}
 	print("PHYSOGEZIC_STATE:"+JSON.stringify(payload))
 
 func _collect_web_controls(node: Node, output: Array) -> void:
@@ -1068,7 +1182,7 @@ func _lab_test() -> void:
 	assert(deck.size()==95,"Laboratory must combine both banks")
 	deck[0]=experiments[0].duplicate(true)
 	_open_card(0)
-	assert(answer_box.get_child_count()==5,"Four shuffled choices and a pass button")
+	assert(answer_box.get_child_count()==4 and skip_button.visible,"Four shuffled choices and an always-visible pass button")
 	for child: Node in answer_box.get_children():
 		if child is Button:
 			assert(not child.text.begins_with("✓"),"Correct answer must not be revealed")
@@ -1116,10 +1230,11 @@ func _journey_test() -> void:
 	_open_card(0)
 	assert(lab_stage.visible,"Participant can open a 3D experiment")
 	_toggle_host_mode()
-	assert(not lab_stage.visible and not selected_card.visible,"Host hides the experiment and its answer")
+	assert(lab_stage.visible and host_panel.visible and not selected_card.visible,"Host broadcasts the experiment without participant cards")
+	assert(host_question.text==str(active.title)+"\n\n"+str(active.prompt),"Host shows only the original shared prompt")
 	_toggle_host_mode()
 	assert(lab_stage.visible and selected_card.visible,"Participant experiment is restored without losing state")
-	print("GODOT_JOURNEY_PASS: five SVG covers, five animated 3D identities, palette changes and host/participant views.")
+	print("GODOT_JOURNEY_PASS: five SVG covers, five animated 3D identities, shared host prompt/lab and participant answers.")
 	get_tree().quit(0)
 
 func _wait_phase(expected: String, seconds: float = 8.0) -> bool:

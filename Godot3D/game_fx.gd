@@ -16,6 +16,7 @@ var time: float = 0.0
 var shake: float = 0.0
 var shake_left: float = 0.0
 var base_camera_offset: float = 1.9
+var base_camera_vertical_offset: float = 0.0
 var mascot_origin: Vector3
 var mascot_tween: Tween
 var mascot_busy: float = 0.0
@@ -113,16 +114,17 @@ func _process(delta: float) -> void:
 	if shake_left>0:
 		shake_left=maxf(0,shake_left-delta)
 		camera.h_offset=base_camera_offset+sin(time*87)*shake*shake_left
-		camera.v_offset=cos(time*69)*shake*shake_left*0.6
+		camera.v_offset=base_camera_vertical_offset+cos(time*69)*shake*shake_left*0.6
 	elif is_instance_valid(camera):
 		camera.h_offset=base_camera_offset
-		camera.v_offset=0.0
+		camera.v_offset=base_camera_vertical_offset
 
-func set_table_focus(host_view: bool) -> void:
-	base_camera_offset=0.0 if host_view else 1.9
+func set_table_focus(host_view: bool, mobile_view: bool=false, shared_content: bool=false) -> void:
+	base_camera_offset=0.0 if mobile_view else (1.6 if host_view and shared_content else (0.0 if host_view else 1.9))
+	base_camera_vertical_offset=-.4 if mobile_view and not host_view else 0.0
 	if is_instance_valid(camera):
 		camera.h_offset=base_camera_offset
-		camera.v_offset=0.0
+		camera.v_offset=base_camera_vertical_offset
 
 func stage_transition(cover: Texture2D, title: String, subtitle: String, accent: Color) -> void:
 	if not enabled:return

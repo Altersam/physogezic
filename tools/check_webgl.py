@@ -74,21 +74,22 @@ try:
 
         def state():return page.evaluate('window.physogezicGameState')
         def click_control(text):
-            data=state();control=next((c for c in data['controls'] if c['text']==text),None)
-            assert control is not None,(text,data['controls'])
             box=page.locator('#canvas').bounding_box();assert box
-            x,y,w,h=control['rect'];vw,vh=data['viewport']
-            if y+h>vh or y<0:
-                page.mouse.move(box['x']+box['width']*.84,box['y']+box['height']*.72)
-                page.mouse.wheel(0,550 if y+h>vh else -550)
-                page.wait_for_timeout(350)
-                data=state();control=next(c for c in data['controls'] if c['text']==text)
+            for scroll_attempt in range(8):
+                data=state();control=next((c for c in data['controls'] if c['text']==text),None)
+                assert control is not None,(text,data['controls'])
                 x,y,w,h=control['rect'];vw,vh=data['viewport']
-            page.locator('#canvas').click(position={'x':(x+w/2)/vw*box['width'],'y':(y+h/2)/vh*box['height']})
+                if y>=0 and y+h<=vh:break
+                page.mouse.move(box['x']+box['width']*.84,box['y']+box['height']*.72)
+                page.mouse.wheel(0,420 if y+h>vh else -420)
+                page.wait_for_timeout(300)
+            else:raise AssertionError(f'Control did not scroll into view: {text}')
+            page.mouse.click(box['x']+(x+w/2)/vw*box['width'],box['y']+(y+h/2)/vh*box['height'])
 
         click_control('Ведущий: стол')
         page.wait_for_function('window.physogezicGameState.hostMode===true')
         assert not any(c['text'].startswith('Открыть карту') for c in state()['controls'])
+        assert not state()['sharedContent']
         page.screenshot(path=str(OUT/'godot-host-table.png'),full_page=True)
         click_control('Участник: карты')
         page.wait_for_function('window.physogezicGameState.hostMode===false')
@@ -98,6 +99,12 @@ try:
         page.wait_for_function('window.physogezicGameState.phase==="answer"',timeout=20000)
         card=state();assert card['remaining']==94
         page.screenshot(path=str(OUT/'godot-webgl-card.png'),full_page=True)
+        click_control('Ведущий: стол')
+        page.wait_for_function('window.physogezicGameState.hostMode===true && window.physogezicGameState.sharedContent===true')
+        assert not any(c['text']=='Пока не знаю' for c in state()['controls']),'Host must not receive answer controls'
+        page.screenshot(path=str(OUT/'godot-host-question.png'),full_page=True)
+        click_control('Участник: карты')
+        page.wait_for_function('window.physogezicGameState.hostMode===false')
         if card['question']['type']=='match':
             click_control('Проверить переходы')
         else:
@@ -147,6 +154,36 @@ try:
         page.set_viewport_size({'width':1280,'height':720})
         page.wait_for_timeout(500)
         page.screenshot(path=str(OUT/'godot-lab-1280x720.png'),full_page=True)
+        click_control('Ведущий: стол')
+        page.wait_for_function('window.physogezicGameState.hostMode===true && window.physogezicGameState.sharedContent===true')
+        assert state()['labVisible'],'Host must broadcast the actual 3D laboratory'
+        assert not any(c['text']=='Пока не знаю' for c in state()['controls'])
+        page.screenshot(path=str(OUT/'godot-host-lab.png'),full_page=True)
+        click_control('Участник: карты')
+        page.wait_for_function('window.physogezicGameState.hostMode===false && window.physogezicGameState.labVisible===true')
+        print('HOST_SHARED_LAB_PASS:',state()['question']['id'])
+        for width,height in ((360,800),(390,844),(768,1024)):
+            page.set_viewport_size({'width':width,'height':height})
+            page.wait_for_function('window.physogezicGameState.mobileLayout===true && window.physogezicGameState.labVisible===true')
+            page.wait_for_timeout(400)
+            data=state();vw,vh=data['viewport']
+            assert vw<=700 and vh<=1000,(width,height,data['viewport'],'Desktop logical scale leaked into portrait')
+            for control in data['controls']:
+                if control['text']=='Стол учителя' or control['text'].endswith(' игр.'):
+                    x,y,w,h=control['rect']
+                    assert x>=0 and y>=0 and x+w<=vw+1 and y+h<=vh+1,(width,height,control,data['viewport'])
+            page.screenshot(path=str(OUT/f'godot-mobile-lab-{width}x{height}.png'),full_page=True)
+            print('MOBILE_LAB_PASS:',width,height,data['viewport'])
+        click_control('Пока не знаю')
+        page.wait_for_function('window.physogezicGameState.phase==="feedback"',timeout=20000)
+        click_control('Продолжить путь →')
+        page.wait_for_function('window.physogezicGameState.phase==="draw"',timeout=20000)
+        page.screenshot(path=str(OUT/'godot-mobile-participant-768x1024.png'),full_page=True)
+        click_control('Открыть карту 1')
+        page.wait_for_function('window.physogezicGameState.phase==="answer"',timeout=20000)
+        assert state()['mobileLayout']
+        page.screenshot(path=str(OUT/'godot-mobile-answer-768x1024.png'),full_page=True)
+        print('MOBILE_PARTICIPANT_INPUT_PASS')
         print('RESPONSIVE_LAB_PASS:',state()['question']['id'])
         errors=page.evaluate('window.physogezicErrors')
         assert not errors,errors
