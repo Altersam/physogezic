@@ -50,7 +50,7 @@ try:
         # Canvas обязан заполнять доступную область без рамок 16:9 и чёрных полос.
         for width,height in ((1280,720),(1920,1080),(2560,1440),(3440,1440),(3840,2160),(1024,768)):
             page.set_viewport_size({'width':width,'height':height})
-            page.wait_for_timeout(450)
+            page.wait_for_function('''() => {const c=document.querySelector('#canvas'),r=c.getBoundingClientRect();return c.width>=r.width*devicePixelRatio-1&&c.height>=r.height*devicePixelRatio-1;}''',timeout=20000)
             metrics=page.evaluate('''() => {const c=document.querySelector('#canvas'),s=document.querySelector('#stage'),r=c.getBoundingClientRect(),q=s.getBoundingClientRect();return {width:c.width,height:c.height,cssWidth:r.width,cssHeight:r.height,stageWidth:q.width,stageHeight:q.height,dpr:devicePixelRatio,overflow:document.documentElement.scrollWidth>innerWidth};}''')
             assert abs(metrics['cssWidth']-metrics['stageWidth'])<=2,metrics
             assert abs(metrics['cssHeight']-metrics['stageHeight'])<=2,metrics
