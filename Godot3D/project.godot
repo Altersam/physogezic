@@ -2,7 +2,7 @@
 config_version=5
 
 [application]
-config/name="Физогэзик — 4K лаборатория"
+config/name="Физогэзик — 4K путешествие"
 run/main_scene="res://main.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="res://assets/happy.png"
@@ -13,7 +13,11 @@ window/size/viewport_height=720
 window/size/window_width_override=3840
 window/size/window_height_override=2160
 window/size/resizable=true
+window/dpi/allow_hidpi=true
 window/stretch/mode="canvas_items"
+
+[gui]
+theme/default_font_multichannel_signed_distance_field=true
 
 [debug]
 file_logging/enable_file_logging=false
