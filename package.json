@@ -1,6 +1,6 @@
 {
   "name": "fizogezik",
-  "version": "5.3.0",
+  "version": "5.4.0",
   "private": true,
   "description": "Цифровая настольная игра для подготовки к ОГЭ по физике",
   "scripts": {

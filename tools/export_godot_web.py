@@ -121,6 +121,7 @@ def main():
     for name in ('index.html','index.js','index.wasm','index.pck'):
         if not (out/name).is_file():raise RuntimeError('Missing export: '+name)
     shutil.copy2(ROOT/'Godot3D'/'network_client.js',out/'network_client.js')
+    shutil.copy2(ROOT/'how-to.js',out/'how-to.js')
     licenses=out/'licenses'
     licenses.mkdir(exist_ok=True)
     for file in (ROOT/'Godot3D'/'assets'/'fonts').glob('*OFL.txt'):shutil.copy2(file,licenses/file.name)

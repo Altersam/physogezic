@@ -25,6 +25,7 @@
   <script defer src="adventure-ui.js"></script>
   <script defer src="table-view.js"></script>
   <script defer src="room-ui.js"></script>
+  <script defer src="how-to.js"></script>
   <script defer src="app.js"></script>
   <script defer src="beauty.js"></script>
 </head>
@@ -40,7 +41,7 @@
       <a href="#formulas" data-nav="formulas">Формулы</a>
       <a href="#progress" data-nav="progress">Прогресс</a>
     </nav>
-    <button class="help-button" data-action="rules"><span>?</span> Как играть</button>
+    <button class="help-button" data-how-to type="button" aria-label="Как пользоваться игрой"><span>?</span> Как пользоваться</button>
   </header>
   <div id="storage-warning" class="storage-warning" role="status" hidden>Браузер не разрешил сохранение. Игра работает, но после закрытия прогресс может потеряться. Для сохранения запустите её через npm start.</div>
   <main id="main" tabindex="-1"></main>
